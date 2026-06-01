@@ -74,10 +74,10 @@
 </div>
 
 <!-- Click zones -->
-<div id="zone-l" class="zone fixed top-0 bottom-0 left-0 w-[28%] z-10 cursor-pointer flex items-center pl-5">
+<div id="zone-l" class="zone fixed top-0 bottom-0 left-0 w-[28%] z-10 flex items-center pl-5">
   <span class="zone-arrow text-5xl font-thin text-transparent transition-colors duration-200 pointer-events-none" style="text-shadow:0 0 24px rgba(0,0,0,0.9)">‹</span>
 </div>
-<div id="zone-r" class="zone fixed top-0 bottom-0 right-0 w-[28%] z-10 cursor-pointer flex items-center justify-end pr-5">
+<div id="zone-r" class="zone fixed top-0 bottom-0 right-0 w-[28%] z-10 flex items-center justify-end pr-5">
   <span class="zone-arrow text-5xl font-thin text-transparent transition-colors duration-200 pointer-events-none" style="text-shadow:0 0 24px rgba(0,0,0,0.9)">›</span>
 </div>
 
@@ -370,6 +370,12 @@
     lib[manga].favourite = !lib[manga].favourite;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(lib)); renderLibrary();
   }
+  function saveChapterLength(manga, chapter, total) {
+    const lib = getLibrary(); if (!lib[manga]) return;
+    lib[manga].chapterPages = lib[manga].chapterPages || {};
+    lib[manga].chapterPages[chapter] = total;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(lib));
+  }
   function savedChapterPage(manga, chapter) { return getLibrary()[manga]?.chapters?.[chapter] ?? 1; }
   function formatName(slug) { return slug.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase()); }
 
@@ -382,25 +388,96 @@
       return (b.updatedAt||0) - (a.updatedAt||0);
     });
     if (!all.length) {
-      libList.innerHTML = '<p class="text-xs text-white/[0.18] text-center px-4 py-8 leading-relaxed">Start reading a manga —<br>it will appear here automatically.</p>';
+      libList.innerHTML = `
+        <div class="flex flex-col items-center justify-center h-full gap-3 px-5 text-center" style="min-height:120px">
+          <i data-lucide="book-marked" style="width:28px;height:28px;color:rgba(255,255,255,0.1)"></i>
+          <p class="text-xs text-white/[0.2] leading-relaxed">Start reading a manga —<br>it will appear here automatically.</p>
+        </div>`;
+      lucide.createIcons();
       return;
     }
-    libList.innerHTML = all.map(e => `
-      <div class="lib-entry flex items-center px-3 py-2.5 gap-2 cursor-pointer border-b border-white/[0.04] transition-colors${e.slug===s.manga?' bg-violet-500/[0.12]':' hover:bg-white/[0.04]'}" data-slug="${e.slug}">
-        <button class="lib-fav shrink-0 text-base leading-none transition-all hover:scale-110 ${e.favourite?'text-yellow-400':'text-white/[0.18] hover:text-yellow-400/70'}"
-          data-slug="${e.slug}" title="${e.favourite?'Unfavourite':'Favourite'}">${e.favourite?'★':'☆'}</button>
-        <div class="flex-1 min-w-0">
-          <div class="text-sm truncate ${e.favourite?'text-white/90':'text-white/75'}">${formatName(e.slug)}</div>
-          <div class="text-xs text-white/30 mt-0.5 tracking-wide">Ch. ${e.lastChapter??1} · Page ${e.lastPage??1}</div>
-        </div>
-        <button class="lib-del flex items-center justify-center w-5 h-5 rounded text-white/[0.18] hover:bg-white/[0.08] hover:text-white/60 transition-all shrink-0" data-slug="${e.slug}" title="Remove">×</button>
-      </div>`).join('');
+    libList.innerHTML = all.map(e => {
+      const coverUrl = `https://images.mangafreak.me/mangas/${e.slug}/${e.slug}_1/${e.slug}_1_1.jpg`;
+      const initials = formatName(e.slug).split(' ').slice(0,2).map(w=>w[0]).join('');
+      const total    = e.chapterPages?.[e.lastChapter];
+      const pct      = total ? Math.round((e.lastPage / total) * 100) : null;
+      const isCurrent = e.slug === s.manga;
+      const isFav    = !!e.favourite;
+      return `
+        <div class="lib-entry group relative flex gap-3 px-3 py-3 cursor-pointer transition-all
+          border-b border-white/[0.04]
+          ${isFav  ? 'border-l-[2px] border-l-yellow-400/50 pl-[10px]' : ''}
+          ${isCurrent ? 'bg-violet-500/[0.09]' : 'hover:bg-white/[0.05]'}"
+          data-slug="${e.slug}">
+
+          <!-- Cover -->
+          <div class="relative w-9 shrink-0 rounded-lg overflow-hidden bg-white/[0.06]" style="height:52px">
+            <img src="${coverUrl}" referrerpolicy="no-referrer"
+              class="w-full h-full object-cover"
+              onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
+            <div class="absolute inset-0 hidden items-center justify-center text-[11px] font-semibold text-white/25">
+              ${initials}
+            </div>
+            ${isCurrent ? '<div class="absolute inset-0 ring-1 ring-inset ring-violet-400/40 rounded-lg"></div>' : ''}
+          </div>
+
+          <!-- Info -->
+          <div class="flex-1 min-w-0 flex flex-col justify-center gap-1">
+            <span class="text-[13px] font-medium leading-tight truncate ${isFav?'text-white/95':'text-white/80'}">${formatName(e.slug)}</span>
+            <span class="text-[11px] text-white/35 tracking-wide">Ch. ${e.lastChapter??1} · Page ${e.lastPage??1}${total?' / '+total:''}</span>
+            ${pct !== null ? `
+            <div class="h-[3px] rounded-full bg-white/[0.07] overflow-hidden mt-0.5">
+              <div class="h-full rounded-full transition-all ${isCurrent?'bg-violet-400/70':'bg-white/25'}" style="width:${pct}%"></div>
+            </div>` : ''}
+          </div>
+
+          <!-- Actions (revealed on hover) -->
+          <div class="lib-actions flex flex-col gap-1 shrink-0 justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+            <button class="lib-fav flex items-center justify-center w-7 h-7 rounded-lg transition-all text-base leading-none
+              ${isFav?'text-yellow-400 hover:text-yellow-300 bg-yellow-400/10':'text-white/30 hover:text-yellow-400 hover:bg-yellow-400/10'}"
+              data-slug="${e.slug}" title="${isFav?'Unfavourite':'Favourite'}">${isFav?'★':'☆'}</button>
+            <button class="lib-del flex items-center justify-center w-7 h-7 rounded-lg text-base leading-none
+              text-white/30 hover:text-red-400 hover:bg-red-400/10 transition-all"
+              data-slug="${e.slug}" title="Remove">×</button>
+          </div>
+        </div>`;
+    }).join('');
+
     libList.querySelectorAll('.lib-entry').forEach(el => {
       el.addEventListener('click', evt => {
         const fav = evt.target.closest('.lib-fav');
         if (fav) { evt.stopPropagation(); toggleFavourite(fav.dataset.slug); return; }
+
         const del = evt.target.closest('.lib-del');
-        if (del) { evt.stopPropagation(); removeEntry(del.dataset.slug); return; }
+        if (del) {
+          evt.stopPropagation();
+          const slug = del.dataset.slug;
+          // Overlay on top of the entry
+          const overlay = document.createElement('div');
+          overlay.className = 'absolute inset-0 flex flex-col items-center justify-center gap-2 z-10 rounded-xl overflow-hidden';
+          overlay.style.background = 'rgba(9,9,11,0.88)';
+          overlay.style.backdropFilter = 'blur(4px)';
+          overlay.innerHTML = `
+            <span class="text-xs text-white/60 tracking-wide">Remove this manga?</span>
+            <div class="flex gap-2">
+              <button class="lib-confirm px-3 py-1.5 rounded-lg text-xs font-medium
+                bg-red-500/20 border border-red-500/40 text-red-400
+                hover:bg-red-500/35 transition-all" data-slug="${slug}">Remove</button>
+              <button class="lib-cancel px-3 py-1.5 rounded-lg text-xs
+                bg-white/[0.05] border border-white/10 text-white/50
+                hover:bg-white/10 transition-all">Cancel</button>
+            </div>`;
+          el.style.position = 'relative';
+          el.appendChild(overlay);
+          overlay.querySelector('.lib-confirm').addEventListener('click', e => {
+            e.stopPropagation(); removeEntry(slug);
+          });
+          overlay.querySelector('.lib-cancel').addEventListener('click', e => {
+            e.stopPropagation(); overlay.remove();
+          });
+          return;
+        }
+
         const entry = getLibrary()[el.dataset.slug];
         if (entry) { load(entry.slug, entry.lastChapter??1, entry.lastPage??1); }
       });
@@ -473,17 +550,31 @@
   }
   function probeNext(manga, ch, pg) {
     const t = new Image(); t.referrerPolicy='no-referrer';
-    t.onerror = () => { if (s.manga===manga&&s.chapter===ch&&s.page===pg) { s.totalPages=pg; refreshUI(); } };
+    t.onerror = () => {
+      if (s.manga===manga&&s.chapter===ch&&s.page===pg) {
+        s.totalPages=pg; refreshUI(); saveChapterLength(manga, ch, pg);
+      }
+    };
     t.src = buildUrl(manga,ch,pg+1);
   }
 
   // ── Navigation ───────────────────────────────────────────────
+  // zone/arrow navigation: page only, never auto-advances chapter
   function nextPage() {
+    if (!s.manga||s.busy) return;
+    load(s.manga, s.chapter, s.page+1, { onFail: null });
+  }
+  function prevPage() {
+    if (!s.manga||s.busy) return;
+    if (s.page > 1) load(s.manga, s.chapter, s.page-1);
+  }
+  // button/keybinding navigation: advances chapter at boundaries
+  function nextPageFull() {
     if (!s.manga||s.busy) return;
     if (s.totalPages&&s.page>=s.totalPages) { load(s.manga,s.chapter+1,1); }
     else { load(s.manga,s.chapter,s.page+1, { onFail:()=>load(s.manga,s.chapter+1,1) }); }
   }
-  function prevPage() {
+  function prevPageFull() {
     if (!s.manga||s.busy) return;
     if (s.page<=1) { if (s.chapter>1) load(s.manga,s.chapter-1,savedChapterPage(s.manga,s.chapter-1)); }
     else { load(s.manga,s.chapter,s.page-1); }
@@ -505,14 +596,12 @@
   });
   $('ch-inc').addEventListener('click', () => { if (s.manga) load(s.manga,s.chapter+1,1); else chInput.value=(parseInt(chInput.value)||1)+1; });
   $('ch-dec').addEventListener('click', () => { if (s.manga&&s.chapter>1) load(s.manga,s.chapter-1,savedChapterPage(s.manga,s.chapter-1)); else chInput.value=Math.max(1,(parseInt(chInput.value)||1)-1); });
-  $('pg-inc').addEventListener('click', () => { if (s.manga) nextPage(); else pgInput.value=(parseInt(pgInput.value)||1)+1; });
-  $('pg-dec').addEventListener('click', () => { if (s.manga) prevPage(); else pgInput.value=Math.max(1,(parseInt(pgInput.value)||1)-1); });
-  $('btn-np').addEventListener('click', nextPage);
-  $('btn-pp').addEventListener('click', prevPage);
+  $('pg-inc').addEventListener('click', () => { if (s.manga) nextPageFull(); else pgInput.value=(parseInt(pgInput.value)||1)+1; });
+  $('pg-dec').addEventListener('click', () => { if (s.manga) prevPageFull(); else pgInput.value=Math.max(1,(parseInt(pgInput.value)||1)-1); });
+  $('btn-np').addEventListener('click', nextPageFull);
+  $('btn-pp').addEventListener('click', prevPageFull);
   $('btn-nc').addEventListener('click', () => { if (s.manga) load(s.manga,s.chapter+1,1); });
   $('btn-pc').addEventListener('click', () => { if (!s.manga||s.chapter<=1) return; load(s.manga,s.chapter-1,savedChapterPage(s.manga,s.chapter-1)); });
-  $('zone-l').addEventListener('click', prevPage);
-  $('zone-r').addEventListener('click', nextPage);
 
   mangaInput.addEventListener('keydown', e => { if (e.key==='Enter') $('go-btn').click(); });
   chInput.addEventListener('keydown',    e => { if (e.key==='Enter'&&s.manga) load(s.manga,parseInt(chInput.value)||1,1); });
@@ -538,8 +627,8 @@
       if (!document.fullscreenElement) document.documentElement.requestFullscreen();
       else document.exitFullscreen(); return;
     }
-    if (matchBinding(e,'nextPage'))  { e.preventDefault(); nextPage(); return; }
-    if (matchBinding(e,'prevPage'))  { e.preventDefault(); prevPage(); return; }
+    if (matchBinding(e,'nextPage'))  { e.preventDefault(); nextPageFull(); return; }
+    if (matchBinding(e,'prevPage'))  { e.preventDefault(); prevPageFull(); return; }
     if (matchBinding(e,'zoomIn'))    { e.preventDefault(); setZoom(zoom+ZOOM_STEP); return; }
     if (matchBinding(e,'zoomOut'))   { e.preventDefault(); setZoom(zoom-ZOOM_STEP); return; }
     if (matchBinding(e,'panRight'))  { e.preventDefault(); panX-=PAN_STEP; clampPan(); applyTransform(); return; }
