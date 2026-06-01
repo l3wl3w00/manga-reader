@@ -30,106 +30,59 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    body.hide-cursor          { cursor: none; }
+    body.hide-cursor        { cursor: none; }
     body.hide-cursor input,
-    body.hide-cursor button   { cursor: none; }
+    body.hide-cursor button { cursor: none; }
 
     /* ── READER ─────────────────────────────────── */
-    #reader {
-      position: fixed; inset: 0;
-      display: flex; align-items: center; justify-content: center;
-    }
+    #reader { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
+
+    #zoom-root { position: absolute; inset: 0; transform-origin: 0 0; }
 
     #manga-img {
-      width: 100vw; height: 100vh;
-      object-fit: contain;
+      width: 100vw; height: 100vh; object-fit: contain;
       display: none; opacity: 0;
       transition: opacity 0.22s ease;
       position: relative; z-index: 2;
+      -webkit-user-drag: none; user-select: none;
     }
     #manga-img.show { opacity: 1; }
 
     /* ── IDLE SCREENS ───────────────────────────── */
-    .overlay-screen {
-      position: absolute; z-index: 3;
-      text-align: center; display: none;
-    }
+    .overlay-screen { position: absolute; z-index: 3; text-align: center; display: none; }
     .overlay-screen.active { display: block; }
 
-    #welcome h1 {
-      font-size: 18px; font-weight: 300;
-      letter-spacing: 10px; text-transform: uppercase;
-      color: rgba(255,255,255,0.16); margin-bottom: 10px;
-    }
-    #welcome p { font-size: 11px; letter-spacing: 2px; color: rgba(255,255,255,0.1); }
+    #welcome h1 { font-size: 18px; font-weight: 300; letter-spacing: 10px; text-transform: uppercase; color: rgba(255,255,255,0.16); margin-bottom: 10px; }
+    #welcome p  { font-size: 11px; letter-spacing: 2px; color: rgba(255,255,255,0.1); }
 
-    .spinner {
-      width: 26px; height: 26px;
-      border: 2px solid rgba(255,255,255,0.07);
-      border-top-color: rgba(255,255,255,0.5);
-      border-radius: 50%;
-      animation: spin 0.75s linear infinite;
-      margin: 0 auto;
-    }
+    .spinner { width: 26px; height: 26px; border: 2px solid rgba(255,255,255,0.07); border-top-color: rgba(255,255,255,0.5); border-radius: 50%; animation: spin 0.75s linear infinite; margin: 0 auto; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
     #error-screen .e1 { font-size: 13px; color: rgba(255,255,255,0.28); letter-spacing: 0.5px; }
     #error-screen .e2 { margin-top: 6px; font-size: 11px; color: rgba(255,255,255,0.14); }
 
     /* ── CLICK ZONES ────────────────────────────── */
-    .zone {
-      position: fixed; top: 0; bottom: 0; width: 28%;
-      z-index: 10; cursor: pointer;
-      display: flex; align-items: center;
-    }
+    .zone { position: fixed; top: 0; bottom: 0; width: 28%; z-index: 10; cursor: pointer; display: flex; align-items: center; }
     #zone-l { left: 0;  justify-content: flex-start; padding-left: 18px; }
     #zone-r { right: 0; justify-content: flex-end;   padding-right: 18px; }
-
-    .zone-arrow {
-      font-size: 40px; font-weight: 100; line-height: 1;
-      color: rgba(255,255,255,0);
-      transition: color 0.25s; pointer-events: none;
-      text-shadow: 0 0 20px rgba(0,0,0,0.8);
-    }
+    .zone-arrow { font-size: 40px; font-weight: 100; line-height: 1; color: rgba(255,255,255,0); transition: color 0.25s; pointer-events: none; text-shadow: 0 0 20px rgba(0,0,0,0.8); }
     .zone:hover .zone-arrow { color: rgba(255,255,255,0.22); }
 
     /* ── TOPBAR ─────────────────────────────────── */
-    #topbar {
-      position: fixed; top: 0; left: 0; right: 0;
-      height: 58px; padding: 0 20px;
-      display: flex; align-items: center; gap: 10px;
-      background: linear-gradient(to bottom, var(--grad-top) 0%, transparent 100%);
-      z-index: 50;
-      transition: opacity 0.35s ease, transform 0.35s ease;
-    }
+    #topbar { position: fixed; top: 0; left: 0; right: 0; height: 58px; padding: 0 20px; display: flex; align-items: center; gap: 10px; background: linear-gradient(to bottom, var(--grad-top) 0%, transparent 100%); z-index: 50; transition: opacity 0.35s ease, transform 0.35s ease; }
     #topbar.hidden { opacity: 0; transform: translateY(-6px); pointer-events: none; }
 
     /* ── BOTTOMBAR ──────────────────────────────── */
-    #bottombar {
-      position: fixed; bottom: 0; left: 0; right: 0;
-      height: 58px; padding: 0 20px;
-      display: flex; align-items: center; justify-content: center; gap: 7px;
-      background: linear-gradient(to top, var(--grad-bot) 0%, transparent 100%);
-      z-index: 50;
-      transition: opacity 0.35s ease, transform 0.35s ease;
-    }
+    #bottombar { position: fixed; bottom: 0; left: 0; right: 0; height: 58px; padding: 0 20px; display: flex; align-items: center; justify-content: center; gap: 7px; background: linear-gradient(to top, var(--grad-bot) 0%, transparent 100%); z-index: 50; transition: opacity 0.35s ease, transform 0.35s ease; }
     #bottombar.hidden { opacity: 0; transform: translateY(6px); pointer-events: none; }
 
     /* ── FORM CONTROLS ──────────────────────────── */
     .field { display: flex; flex-direction: column; gap: 2px; }
     .field-label { font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); }
 
-    input {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      color: var(--text);
-      font-family: inherit; font-size: 13px;
-      padding: 5px 10px; border-radius: 5px;
-      outline: none;
-      transition: border-color 0.18s, background 0.18s;
-    }
-    input:hover  { border-color: rgba(255,255,255,0.16); }
-    input:focus  { border-color: rgba(255,255,255,0.32); background: rgba(255,255,255,0.07); }
+    input { background: var(--surface); border: 1px solid var(--border); color: var(--text); font-family: inherit; font-size: 13px; padding: 5px 10px; border-radius: 5px; outline: none; transition: border-color 0.18s, background 0.18s; }
+    input:hover { border-color: rgba(255,255,255,0.16); }
+    input:focus { border-color: rgba(255,255,255,0.32); background: rgba(255,255,255,0.07); }
     #manga-input { width: 148px; }
     input.num { width: 60px; text-align: center; }
     input[type=number]::-webkit-inner-spin-button,
@@ -138,126 +91,86 @@
     .sep { width: 1px; height: 24px; background: var(--border); flex-shrink: 0; }
 
     /* ── BUTTONS ────────────────────────────────── */
-    button {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      color: var(--text);
-      font-family: inherit; font-size: 12px;
-      letter-spacing: 0.3px;
-      padding: 6px 14px; border-radius: 5px;
-      cursor: pointer; white-space: nowrap;
-      transition: background 0.18s, border-color 0.18s;
-    }
+    button { background: var(--surface); border: 1px solid var(--border); color: var(--text); font-family: inherit; font-size: 12px; letter-spacing: 0.3px; padding: 6px 14px; border-radius: 5px; cursor: pointer; white-space: nowrap; transition: background 0.18s, border-color 0.18s; }
     button:hover { background: rgba(255,255,255,0.09); border-color: rgba(255,255,255,0.18); }
     button.accent { background: var(--accent-dim); border-color: var(--accent-border); }
     button.accent:hover { background: rgba(139,92,246,0.35); border-color: rgba(139,92,246,0.65); }
 
-    /* library toggle button */
-    #lib-toggle {
-      padding: 6px 10px; font-size: 15px; letter-spacing: 0;
-      flex-shrink: 0; line-height: 1;
-    }
-    #lib-toggle.active {
-      background: rgba(255,255,255,0.1);
-      border-color: rgba(255,255,255,0.2);
-    }
+    .icon-btn { padding: 6px 10px; font-size: 15px; letter-spacing: 0; flex-shrink: 0; line-height: 1; }
+    .icon-btn.active { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); }
 
-    #info {
-      margin-left: auto;
-      font-size: 12px; color: var(--muted);
-      letter-spacing: 0.5px;
-      min-width: 64px; text-align: right;
-    }
+    #info { margin-left: auto; font-size: 12px; color: var(--muted); letter-spacing: 0.5px; min-width: 64px; text-align: right; }
 
     /* ── PROGRESS BAR ───────────────────────────── */
-    #progress {
-      position: fixed; bottom: 0; left: 0;
-      height: 2px; width: 0%;
-      background: var(--accent); opacity: 0;
-      transition: width 0.3s ease, opacity 0.35s ease;
-      z-index: 200; pointer-events: none;
-    }
+    #progress { position: fixed; bottom: 0; left: 0; height: 2px; width: 0%; background: var(--accent); opacity: 0; transition: width 0.3s ease, opacity 0.35s ease; z-index: 200; pointer-events: none; }
+
+    /* ── SHARED PANEL/MODAL STYLES ──────────────── */
+    .backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 98; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+    .backdrop.open { opacity: 1; pointer-events: all; }
 
     /* ── LIBRARY PANEL ──────────────────────────── */
-    #lib-backdrop {
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,0.55);
-      z-index: 98;
-      opacity: 0; pointer-events: none;
-      transition: opacity 0.3s ease;
-    }
-    #lib-backdrop.open { opacity: 1; pointer-events: all; }
-
-    #lib-panel {
-      position: fixed; top: 0; left: 0; bottom: 0;
-      width: 272px;
-      background: var(--panel-bg);
-      border-right: 1px solid rgba(255,255,255,0.07);
-      z-index: 99;
-      display: flex; flex-direction: column;
-      transform: translateX(-100%);
-      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
+    #lib-panel { position: fixed; top: 0; left: 0; bottom: 0; width: 272px; background: var(--panel-bg); border-right: 1px solid rgba(255,255,255,0.07); z-index: 99; display: flex; flex-direction: column; transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.4,0,0.2,1); }
     #lib-panel.open { transform: translateX(0); }
 
-    #lib-header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0 16px;
-      height: 52px; flex-shrink: 0;
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-    }
-    #lib-header span {
-      font-size: 10px; letter-spacing: 2px;
-      text-transform: uppercase; color: var(--muted);
-    }
-    #lib-close {
-      background: none; border: none;
-      color: var(--muted); font-size: 18px;
-      padding: 4px 6px; border-radius: 4px; line-height: 1;
-    }
-    #lib-close:hover { background: rgba(255,255,255,0.07); color: var(--text); }
+    .panel-header { display: flex; align-items: center; justify-content: space-between; padding: 0 16px; height: 52px; flex-shrink: 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .panel-header span { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+    .panel-close { background: none; border: none; color: var(--muted); font-size: 18px; padding: 4px 6px; border-radius: 4px; line-height: 1; }
+    .panel-close:hover { background: rgba(255,255,255,0.07); color: var(--text); }
 
-    #lib-list {
-      flex: 1; overflow-y: auto;
-      padding: 6px 0;
-      scrollbar-width: thin;
-      scrollbar-color: rgba(255,255,255,0.1) transparent;
-    }
+    #lib-list { flex: 1; overflow-y: auto; padding: 6px 0; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.1) transparent; }
     #lib-list::-webkit-scrollbar { width: 4px; }
     #lib-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
 
-    .lib-empty {
-      padding: 40px 20px; text-align: center;
-      font-size: 12px; color: rgba(255,255,255,0.18);
-      letter-spacing: 0.5px; line-height: 1.7;
-    }
-
-    .lib-entry {
-      display: flex; align-items: center;
-      padding: 10px 14px 10px 16px;
-      cursor: pointer; gap: 10px;
-      transition: background 0.15s;
-      border-bottom: 1px solid rgba(255,255,255,0.04);
-    }
+    .lib-empty { padding: 40px 20px; text-align: center; font-size: 12px; color: rgba(255,255,255,0.18); letter-spacing: 0.5px; line-height: 1.7; }
+    .lib-entry { display: flex; align-items: center; padding: 10px 14px 10px 16px; cursor: pointer; gap: 10px; transition: background 0.15s; border-bottom: 1px solid rgba(255,255,255,0.04); }
     .lib-entry:hover { background: rgba(255,255,255,0.04); }
     .lib-entry.current { background: var(--accent-dim); }
-
     .lib-info { flex: 1; min-width: 0; }
-    .lib-name {
-      font-size: 13px; color: rgba(255,255,255,0.85);
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-      margin-bottom: 3px;
-    }
-    .lib-pos { font-size: 11px; color: rgba(255,255,255,0.32); letter-spacing: 0.3px; }
-
-    .lib-del {
-      background: none; border: none;
-      color: rgba(255,255,255,0.18); font-size: 16px;
-      padding: 3px 6px; border-radius: 4px; line-height: 1;
-      flex-shrink: 0;
-      transition: color 0.15s, background 0.15s;
-    }
+    .lib-name { font-size: 13px; color: rgba(255,255,255,0.85); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 3px; }
+    .lib-pos  { font-size: 11px; color: rgba(255,255,255,0.32); letter-spacing: 0.3px; }
+    .lib-del  { background: none; border: none; color: rgba(255,255,255,0.18); font-size: 16px; padding: 3px 6px; border-radius: 4px; line-height: 1; flex-shrink: 0; transition: color 0.15s, background 0.15s; }
     .lib-del:hover { color: rgba(255,255,255,0.7); background: rgba(255,255,255,0.08); }
+
+    /* ── KEYBINDINGS MODAL ──────────────────────── */
+    #kb-modal {
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.97);
+      width: 360px;
+      background: var(--panel-bg);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      z-index: 110;
+      display: flex; flex-direction: column;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+    #kb-modal.open { opacity: 1; pointer-events: all; transform: translate(-50%, -50%) scale(1); }
+    #kb-backdrop   { z-index: 109; }
+
+    #kb-modal .panel-header { border-radius: 10px 10px 0 0; }
+
+    #kb-body { padding: 8px 0 4px; }
+
+    .kb-group-label { font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(255,255,255,0.22); padding: 10px 18px 4px; }
+
+    .kb-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 18px; gap: 12px; }
+    .kb-action { font-size: 12px; color: rgba(255,255,255,0.6); flex: 1; }
+
+    .kb-key {
+      font-size: 11px; font-family: inherit;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: var(--text);
+      padding: 4px 10px; border-radius: 5px;
+      cursor: pointer; min-width: 86px; text-align: center;
+      transition: background 0.15s, border-color 0.15s;
+      letter-spacing: 0.3px;
+    }
+    .kb-key:hover    { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.22); }
+    .kb-key.recording { background: var(--accent-dim); border-color: var(--accent-border); color: rgba(255,255,255,0.55); }
+
+    #kb-footer { padding: 12px 18px 16px; display: flex; justify-content: flex-end; border-top: 1px solid rgba(255,255,255,0.06); margin-top: 4px; }
+    #kb-reset { font-size: 11px; color: rgba(255,255,255,0.4); background: none; border: 1px solid rgba(255,255,255,0.1); padding: 5px 14px; border-radius: 5px; cursor: pointer; transition: color 0.15s, border-color 0.15s; }
+    #kb-reset:hover { color: rgba(255,255,255,0.75); border-color: rgba(255,255,255,0.25); }
   </style>
 </head>
 <body>
@@ -267,26 +180,29 @@
     <h1>Manga Reader</h1>
     <p>Open the library or enter a manga name above</p>
   </div>
-  <div id="loading-screen" class="overlay-screen">
-    <div class="spinner"></div>
-  </div>
+  <div id="loading-screen" class="overlay-screen"><div class="spinner"></div></div>
   <div id="error-screen" class="overlay-screen">
     <div class="e1">Could not load this page</div>
     <div class="e2">Check the manga name, chapter or page number</div>
   </div>
-  <img id="manga-img" referrerpolicy="no-referrer" alt="" />
+  <div id="zoom-root">
+    <img id="manga-img" referrerpolicy="no-referrer" alt="" draggable="false" />
+  </div>
 </div>
 
 <div class="zone" id="zone-l"><span class="zone-arrow">‹</span></div>
 <div class="zone" id="zone-r"><span class="zone-arrow">›</span></div>
 
 <div id="topbar">
-  <button id="lib-toggle" title="Library">☰</button>
+  <button class="icon-btn" id="lib-toggle"  title="Library">☰</button>
+  <button class="icon-btn" id="kb-toggle"   title="Key bindings">⌨</button>
   <div class="sep"></div>
   <div class="field">
     <span class="field-label">Manga</span>
-    <input id="manga-input" type="text" placeholder="one_piece"
-           spellcheck="false" autocomplete="off" autocapitalize="off" />
+    <div style="display:flex;gap:4px;align-items:center;">
+      <input id="manga-input" type="text" placeholder="one_piece" spellcheck="false" autocomplete="off" autocapitalize="off" />
+      <button class="icon-btn" id="search-btn" title="Search on MangaFreak" style="font-size:13px;padding:5px 8px;">↗</button>
+    </div>
   </div>
   <div class="sep"></div>
   <div class="field">
@@ -299,6 +215,7 @@
     <input id="pg-input" class="num" type="number" value="1" min="1" />
   </div>
   <button class="accent" id="go-btn">Go</button>
+  <button class="icon-btn" id="site-btn" title="Open on MangaFreak" style="font-size:13px;">↗</button>
   <div id="info"></div>
 </div>
 
@@ -311,26 +228,96 @@
 
 <div id="progress"></div>
 
-<!-- Library panel -->
-<div id="lib-backdrop"></div>
+<!-- Library -->
+<div class="backdrop" id="lib-backdrop"></div>
 <div id="lib-panel">
-  <div id="lib-header">
+  <div class="panel-header">
     <span>Library</span>
-    <button id="lib-close">×</button>
+    <button class="panel-close" id="lib-close">×</button>
   </div>
   <div id="lib-list"></div>
 </div>
 
+<!-- Keybindings -->
+<div class="backdrop" id="kb-backdrop"></div>
+<div id="kb-modal">
+  <div class="panel-header">
+    <span>Key Bindings</span>
+    <button class="panel-close" id="kb-close">×</button>
+  </div>
+  <div id="kb-body"></div>
+  <div id="kb-footer">
+    <button id="kb-reset">Reset to defaults</button>
+  </div>
+</div>
+
 <script>
 (() => {
-  // ── State ────────────────────────────────────────────────────
-  const s = {
-    manga:      '',
-    chapter:    1,
-    page:       1,
-    totalPages: null,
-    busy:       false,
+  // ── Reader state ─────────────────────────────────────────────
+  const s = { manga: '', chapter: 1, page: 1, totalPages: null, busy: false };
+
+  // ── Zoom state ───────────────────────────────────────────────
+  const MIN_ZOOM  = 1;
+  const MAX_ZOOM  = 4;
+  const ZOOM_STEP = 0.15;
+  const PAN_STEP  = 80;
+
+  let zoom         = 1, panX = 0, panY = 0;
+  let mouseX       = window.innerWidth / 2, mouseY = window.innerHeight / 2;
+  let isDragging   = false, dragStart = null, dragPanStart = null;
+
+  // ── Keybindings ──────────────────────────────────────────────
+  const KB_STORAGE = 'manga-reader-bindings';
+
+  const DEFAULT_BINDINGS = {
+    nextPage: { key: 'ArrowRight', ctrl: true  },
+    prevPage: { key: 'ArrowLeft',  ctrl: true  },
+    zoomIn:   { key: 'ArrowUp',    ctrl: true  },
+    zoomOut:  { key: 'ArrowDown',  ctrl: true  },
+    panUp:    { key: 'ArrowUp',    ctrl: false },
+    panDown:  { key: 'ArrowDown',  ctrl: false },
+    panLeft:  { key: 'ArrowLeft',  ctrl: false },
+    panRight: { key: 'ArrowRight', ctrl: false },
   };
+
+  const ACTION_GROUPS = [
+    { label: 'Navigation', actions: ['nextPage', 'prevPage'] },
+    { label: 'Zoom',       actions: ['zoomIn', 'zoomOut']    },
+    { label: 'Pan',        actions: ['panUp', 'panDown', 'panLeft', 'panRight'] },
+  ];
+
+  const ACTION_LABELS = {
+    nextPage: 'Next page', prevPage: 'Previous page',
+    zoomIn:   'Zoom in',   zoomOut:  'Zoom out',
+    panUp:    'Pan up',    panDown:  'Pan down',
+    panLeft:  'Pan left',  panRight: 'Pan right',
+  };
+
+  let bindings = loadBindings();
+  let recordingAction = null;
+
+  function loadBindings() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(KB_STORAGE));
+      return saved ? { ...DEFAULT_BINDINGS, ...saved } : { ...DEFAULT_BINDINGS };
+    } catch { return { ...DEFAULT_BINDINGS }; }
+  }
+
+  function saveBindings() {
+    localStorage.setItem(KB_STORAGE, JSON.stringify(bindings));
+  }
+
+  function matchBinding(e, action) {
+    const b = bindings[action];
+    return b && e.key === b.key && !!e.ctrlKey === !!b.ctrl;
+  }
+
+  const ARROW_SYMBOLS = { ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→' };
+  function formatKey(b) {
+    if (!b) return '—';
+    const k = ARROW_SYMBOLS[b.key] || b.key;
+    return b.ctrl ? `Ctrl+${k}` : k;
+  }
 
   // ── DOM ──────────────────────────────────────────────────────
   const $ = id => document.getElementById(id);
@@ -339,6 +326,7 @@
   const pgInput     = $('pg-input');
   const infoEl      = $('info');
   const imgEl       = $('manga-img');
+  const zoomRoot    = $('zoom-root');
   const topbar      = $('topbar');
   const bottombar   = $('bottombar');
   const progressBar = $('progress');
@@ -346,12 +334,68 @@
   const libBackdrop = $('lib-backdrop');
   const libList     = $('lib-list');
   const libToggle   = $('lib-toggle');
+  const kbModal     = $('kb-modal');
+  const kbBackdrop  = $('kb-backdrop');
+  const kbBody      = $('kb-body');
+  const kbToggle    = $('kb-toggle');
 
-  const screens = {
-    welcome: $('welcome'),
-    loading: $('loading-screen'),
-    error:   $('error-screen'),
-  };
+  const screens = { welcome: $('welcome'), loading: $('loading-screen'), error: $('error-screen') };
+
+  // ── Zoom ─────────────────────────────────────────────────────
+  function clampPan() {
+    const vw = window.innerWidth, vh = window.innerHeight;
+    panX = Math.max(vw * (1 - zoom), Math.min(0, panX));
+    panY = Math.max(vh * (1 - zoom), Math.min(0, panY));
+  }
+
+  function applyTransform() {
+    zoomRoot.style.transform = `translate(${panX}px,${panY}px) scale(${zoom})`;
+  }
+
+  function setZoom(newZoom) {
+    newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, newZoom));
+    if (newZoom === MIN_ZOOM) { panX = panY = 0; }
+    else {
+      const scale = newZoom / zoom;
+      panX = mouseX - (mouseX - panX) * scale;
+      panY = mouseY - (mouseY - panY) * scale;
+    }
+    zoom = newZoom;
+    clampPan();
+    applyTransform();
+    updateCursor();
+  }
+
+  function resetZoom() { zoom = MIN_ZOOM; panX = panY = 0; applyTransform(); updateCursor(); }
+
+  function updateCursor() {
+    if (zoom > 1) {
+      document.body.classList.remove('hide-cursor');
+      document.body.style.cursor = isDragging ? 'grabbing' : 'grab';
+    } else {
+      document.body.style.cursor = '';
+    }
+  }
+
+  document.addEventListener('mousedown', e => {
+    if (zoom <= 1) return;
+    if (e.target.closest('button, input, #lib-panel, #kb-modal')) return;
+    isDragging = true;
+    dragStart = { x: e.clientX, y: e.clientY };
+    dragPanStart = { x: panX, y: panY };
+    updateCursor();
+    e.preventDefault();
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (isDragging) { isDragging = false; updateCursor(); }
+  });
+
+  document.addEventListener('wheel', e => {
+    if (!s.manga) return;
+    e.preventDefault();
+    setZoom(zoom + (e.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP));
+  }, { passive: false });
 
   // ── Library storage ──────────────────────────────────────────
   const STORAGE_KEY = 'manga-reader-library';
@@ -364,12 +408,13 @@
   function saveProgress(manga, chapter, page) {
     const lib = getLibrary();
     if (!lib[manga]) lib[manga] = { slug: manga, chapters: {} };
-    lib[manga].chapters         = lib[manga].chapters || {};
+    lib[manga].chapters          = lib[manga].chapters || {};
     lib[manga].chapters[chapter] = page;
-    lib[manga].lastChapter      = chapter;
-    lib[manga].lastPage         = page;
-    lib[manga].updatedAt        = Date.now();
+    lib[manga].lastChapter       = chapter;
+    lib[manga].lastPage          = page;
+    lib[manga].updatedAt         = Date.now();
     localStorage.setItem(STORAGE_KEY, JSON.stringify(lib));
+    localStorage.setItem('manga-reader-last', JSON.stringify({ slug: manga, chapter, page }));
     renderLibrary();
   }
 
@@ -380,10 +425,8 @@
     renderLibrary();
   }
 
-  // Returns the last saved page for a given chapter (defaults to 1).
   function savedChapterPage(manga, chapter) {
-    const lib = getLibrary();
-    return lib[manga]?.chapters?.[chapter] ?? 1;
+    return getLibrary()[manga]?.chapters?.[chapter] ?? 1;
   }
 
   function formatName(slug) {
@@ -398,12 +441,7 @@
     libPanel.classList.add('open');
     libBackdrop.classList.add('open');
     libToggle.classList.add('active');
-    // keep controls visible while panel is open
-    clearTimeout(hideTimer);
-    clearTimeout(cursorTimer);
-    topbar.classList.remove('hidden');
-    bottombar.classList.remove('hidden');
-    document.body.classList.remove('hide-cursor');
+    freezeControls();
     renderLibrary();
   }
 
@@ -415,14 +453,11 @@
   }
 
   function renderLibrary() {
-    const lib     = getLibrary();
-    const entries = Object.values(lib).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
-
+    const entries = Object.values(getLibrary()).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
     if (!entries.length) {
       libList.innerHTML = '<div class="lib-empty">Start reading a manga —<br>it will appear here automatically.</div>';
       return;
     }
-
     libList.innerHTML = entries.map(e => `
       <div class="lib-entry${e.slug === s.manga ? ' current' : ''}" data-slug="${e.slug}">
         <div class="lib-info">
@@ -430,22 +465,13 @@
           <div class="lib-pos">Ch. ${e.lastChapter ?? 1} · Page ${e.lastPage ?? 1}</div>
         </div>
         <button class="lib-del" data-slug="${e.slug}" title="Remove">×</button>
-      </div>
-    `).join('');
-
+      </div>`).join('');
     libList.querySelectorAll('.lib-entry').forEach(el => {
       el.addEventListener('click', evt => {
-        const delBtn = evt.target.closest('.lib-del');
-        if (delBtn) {
-          evt.stopPropagation();
-          removeEntry(delBtn.dataset.slug);
-          return;
-        }
+        const del = evt.target.closest('.lib-del');
+        if (del) { evt.stopPropagation(); removeEntry(del.dataset.slug); return; }
         const entry = getLibrary()[el.dataset.slug];
-        if (entry) {
-          closeLibrary();
-          load(entry.slug, entry.lastChapter ?? 1, entry.lastPage ?? 1);
-        }
+        if (entry) { closeLibrary(); load(entry.slug, entry.lastChapter ?? 1, entry.lastPage ?? 1); }
       });
     });
   }
@@ -454,14 +480,62 @@
   $('lib-close').addEventListener('click', closeLibrary);
   libBackdrop.addEventListener('click', closeLibrary);
 
-  // ── URL builder ──────────────────────────────────────────────
+  // ── Keybindings modal ────────────────────────────────────────
+  let kbOpen = false;
+
+  function openKb() {
+    kbOpen = true;
+    kbModal.classList.add('open');
+    kbBackdrop.classList.add('open');
+    kbToggle.classList.add('active');
+    freezeControls();
+    renderKb();
+  }
+
+  function closeKb() {
+    recordingAction = null;
+    kbOpen = false;
+    kbModal.classList.remove('open');
+    kbBackdrop.classList.remove('open');
+    kbToggle.classList.remove('active');
+  }
+
+  function renderKb() {
+    kbBody.innerHTML = ACTION_GROUPS.map(g => `
+      <div class="kb-group-label">${g.label}</div>
+      ${g.actions.map(a => `
+        <div class="kb-row">
+          <span class="kb-action">${ACTION_LABELS[a]}</span>
+          <button class="kb-key${recordingAction === a ? ' recording' : ''}" data-action="${a}">
+            ${recordingAction === a ? 'Press a key…' : formatKey(bindings[a])}
+          </button>
+        </div>`).join('')}
+    `).join('');
+
+    kbBody.querySelectorAll('.kb-key').forEach(btn => {
+      btn.addEventListener('click', () => {
+        recordingAction = btn.dataset.action;
+        renderKb();
+      });
+    });
+  }
+
+  $('kb-reset').addEventListener('click', () => {
+    bindings = { ...DEFAULT_BINDINGS };
+    saveBindings();
+    recordingAction = null;
+    renderKb();
+  });
+
+  kbToggle.addEventListener('click', () => kbOpen ? closeKb() : openKb());
+  $('kb-close').addEventListener('click', closeKb);
+  kbBackdrop.addEventListener('click', closeKb);
+
+  // ── URL / helpers ────────────────────────────────────────────
   function buildUrl(manga, ch, pg) {
     return `https://images.mangafreak.me/mangas/${manga}/${manga}_${ch}/${manga}_${ch}_${pg}.jpg`;
   }
-
-  function normManga(raw) {
-    return raw.trim().toLowerCase().replace(/\s+/g, '_');
-  }
+  function normManga(raw) { return raw.trim().toLowerCase().replace(/\s+/g, '_'); }
 
   // ── Screen switching ─────────────────────────────────────────
   function showScreen(name) {
@@ -480,7 +554,6 @@
     chInput.value = s.chapter;
     pgInput.value = s.page;
     if (s.manga) mangaInput.value = s.manga;
-
     if (s.totalPages) {
       infoEl.textContent        = `${s.page} / ${s.totalPages}`;
       progressBar.style.width   = `${(s.page / s.totalPages) * 100}%`;
@@ -495,144 +568,164 @@
   function load(manga, ch, pg, opts = {}) {
     if (s.busy) return;
     if (!manga) { showScreen('welcome'); return; }
-
-    s.busy       = true;
-    s.manga      = manga;
-    s.chapter    = ch;
-    s.page       = pg;
-    s.totalPages = null;
-
+    s.busy = true; s.manga = manga; s.chapter = ch; s.page = pg; s.totalPages = null;
     refreshUI();
     showScreen('loading');
-
     const probe = new Image();
     probe.referrerPolicy = 'no-referrer';
-
     probe.onload = () => {
       s.busy = false;
       imgEl.src = buildUrl(manga, ch, pg);
       imgEl.style.display = 'block';
       showScreen('image');
+      resetZoom();
       refreshUI();
       saveProgress(manga, ch, pg);
       probeNext(manga, ch, pg);
     };
-
     probe.onerror = () => {
       s.busy = false;
-      if (opts.onFail) opts.onFail();
-      else showScreen('error');
+      if (opts.onFail) opts.onFail(); else showScreen('error');
     };
-
     probe.src = buildUrl(manga, ch, pg);
   }
 
   function probeNext(manga, ch, pg) {
     const t = new Image();
     t.referrerPolicy = 'no-referrer';
-    t.onerror = () => {
-      if (s.manga === manga && s.chapter === ch && s.page === pg) {
-        s.totalPages = pg;
-        refreshUI();
-      }
-    };
+    t.onerror = () => { if (s.manga === manga && s.chapter === ch && s.page === pg) { s.totalPages = pg; refreshUI(); } };
     t.src = buildUrl(manga, ch, pg + 1);
   }
 
   // ── Navigation ───────────────────────────────────────────────
   function nextPage() {
     if (!s.manga || s.busy) return;
-    if (s.totalPages && s.page >= s.totalPages) {
-      load(s.manga, s.chapter + 1, 1);
-    } else {
-      load(s.manga, s.chapter, s.page + 1, {
-        onFail: () => load(s.manga, s.chapter + 1, 1),
-      });
-    }
+    if (s.totalPages && s.page >= s.totalPages) { load(s.manga, s.chapter + 1, 1); }
+    else { load(s.manga, s.chapter, s.page + 1, { onFail: () => load(s.manga, s.chapter + 1, 1) }); }
   }
 
   function prevPage() {
     if (!s.manga || s.busy) return;
     if (s.page <= 1) {
-      if (s.chapter > 1) {
-        // Resume at the last visited page of the previous chapter
-        const pg = savedChapterPage(s.manga, s.chapter - 1);
-        load(s.manga, s.chapter - 1, pg);
-      }
-    } else {
-      load(s.manga, s.chapter, s.page - 1);
-    }
+      if (s.chapter > 1) load(s.manga, s.chapter - 1, savedChapterPage(s.manga, s.chapter - 1));
+    } else { load(s.manga, s.chapter, s.page - 1); }
   }
 
   // ── Button listeners ─────────────────────────────────────────
+  $('search-btn').addEventListener('click', () => {
+    const q = mangaInput.value.trim().replace(/_/g, ' ');
+    if (!q) return;
+    window.open(`https://ww2.mangafreak.me/Find/${encodeURIComponent(q)}`, '_blank');
+  });
+
+  $('site-btn').addEventListener('click', () => {
+    if (!s.manga) return;
+    const name = s.manga.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('_');
+    window.open(`https://ww2.mangafreak.me/Read1_${name}_${s.chapter}`, '_blank');
+  });
+
   $('go-btn').addEventListener('click', () => {
     const manga = normManga(mangaInput.value);
     if (!manga) return;
     load(manga, parseInt(chInput.value) || 1, parseInt(pgInput.value) || 1);
   });
-
   $('btn-np').addEventListener('click', nextPage);
   $('btn-pp').addEventListener('click', prevPage);
   $('btn-nc').addEventListener('click', () => { if (s.manga) load(s.manga, s.chapter + 1, 1); });
   $('btn-pc').addEventListener('click', () => {
     if (!s.manga || s.chapter <= 1) return;
-    const pg = savedChapterPage(s.manga, s.chapter - 1);
-    load(s.manga, s.chapter - 1, pg);
+    load(s.manga, s.chapter - 1, savedChapterPage(s.manga, s.chapter - 1));
   });
-
   $('zone-l').addEventListener('click', prevPage);
   $('zone-r').addEventListener('click', nextPage);
 
   mangaInput.addEventListener('keydown', e => { if (e.key === 'Enter') $('go-btn').click(); });
-  chInput.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && s.manga) load(s.manga, parseInt(chInput.value) || 1, 1);
-  });
-  pgInput.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && s.manga) load(s.manga, s.chapter, parseInt(pgInput.value) || 1);
+  chInput.addEventListener('keydown', e => { if (e.key === 'Enter' && s.manga) load(s.manga, parseInt(chInput.value) || 1, 1); });
+  pgInput.addEventListener('keydown', e => { if (e.key === 'Enter' && s.manga) load(s.manga, s.chapter, parseInt(pgInput.value) || 1); });
+
+  // Keep controls visible while any input is focused
+  document.querySelectorAll('input').forEach(inp => {
+    inp.addEventListener('focus', freezeControls);
+    inp.addEventListener('blur',  showControls);
   });
 
+  // ── Keyboard handler ─────────────────────────────────────────
   document.addEventListener('keydown', e => {
+    // Recording mode: capture the next key for a binding
+    if (recordingAction !== null) {
+      e.preventDefault();
+      if (e.key === 'Escape') { recordingAction = null; renderKb(); return; }
+      if (['Control', 'Shift', 'Alt', 'Meta'].includes(e.key)) return;
+      bindings[recordingAction] = { key: e.key, ctrl: e.ctrlKey };
+      saveBindings();
+      recordingAction = null;
+      renderKb();
+      return;
+    }
+
     if (document.activeElement.tagName === 'INPUT') {
       if (e.key === 'Escape') document.activeElement.blur();
       return;
     }
-    if (e.key === 'Escape' && libOpen) { closeLibrary(); return; }
-    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') nextPage();
-    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   prevPage();
+
+    if (e.key === 'Escape') { if (libOpen) closeLibrary(); else if (kbOpen) closeKb(); return; }
+    if (e.key === 'f' || e.key === 'F') {
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+      else document.exitFullscreen();
+      return;
+    }
+
+    if (matchBinding(e, 'nextPage'))  { e.preventDefault(); nextPage(); return; }
+    if (matchBinding(e, 'prevPage'))  { e.preventDefault(); prevPage(); return; }
+    if (matchBinding(e, 'zoomIn'))    { e.preventDefault(); setZoom(zoom + ZOOM_STEP); return; }
+    if (matchBinding(e, 'zoomOut'))   { e.preventDefault(); setZoom(zoom - ZOOM_STEP); return; }
+    if (matchBinding(e, 'panRight'))  { e.preventDefault(); panX -= PAN_STEP; clampPan(); applyTransform(); return; }
+    if (matchBinding(e, 'panLeft'))   { e.preventDefault(); panX += PAN_STEP; clampPan(); applyTransform(); return; }
+    if (matchBinding(e, 'panDown'))   { e.preventDefault(); panY -= PAN_STEP; clampPan(); applyTransform(); return; }
+    if (matchBinding(e, 'panUp'))     { e.preventDefault(); panY += PAN_STEP; clampPan(); applyTransform(); return; }
+  });
+
+  // ── Mouse tracking + drag ────────────────────────────────────
+  document.addEventListener('mousemove', e => {
+    mouseX = e.clientX; mouseY = e.clientY;
+    if (isDragging) {
+      panX = dragPanStart.x + (e.clientX - dragStart.x);
+      panY = dragPanStart.y + (e.clientY - dragStart.y);
+      clampPan(); applyTransform();
+    } else { showControls(); }
   });
 
   // ── Auto-hide controls & cursor ──────────────────────────────
-  let hideTimer   = null;
-  let cursorTimer = null;
+  let hideTimer = null, cursorTimer = null;
+
+  function freezeControls() {
+    clearTimeout(hideTimer); clearTimeout(cursorTimer);
+    topbar.classList.remove('hidden'); bottombar.classList.remove('hidden');
+    document.body.classList.remove('hide-cursor');
+  }
 
   function showControls() {
-    if (libOpen) return;
-    topbar.classList.remove('hidden');
-    bottombar.classList.remove('hidden');
-    document.body.classList.remove('hide-cursor');
-
-    clearTimeout(hideTimer);
-    clearTimeout(cursorTimer);
-
-    if (s.manga) {
-      hideTimer = setTimeout(() => {
-        if (!libOpen) {
-          topbar.classList.add('hidden');
-          bottombar.classList.add('hidden');
-        }
-      }, 2800);
-      cursorTimer = setTimeout(() => {
-        if (!libOpen) document.body.classList.add('hide-cursor');
-      }, 2800);
+    if (libOpen || kbOpen) return;
+    topbar.classList.remove('hidden'); bottombar.classList.remove('hidden');
+    if (zoom <= 1) document.body.classList.remove('hide-cursor');
+    clearTimeout(hideTimer); clearTimeout(cursorTimer);
+    const inputFocused = document.activeElement?.tagName === 'INPUT';
+    if (s.manga && !inputFocused) {
+      hideTimer   = setTimeout(() => { if (!libOpen && !kbOpen) { topbar.classList.add('hidden'); bottombar.classList.add('hidden'); } }, 2800);
+      cursorTimer = setTimeout(() => { if (!libOpen && !kbOpen && zoom <= 1) document.body.classList.add('hide-cursor'); }, 2800);
     }
   }
 
-  document.addEventListener('mousemove', showControls);
-
   // ── Init ─────────────────────────────────────────────────────
+  renderLibrary();
+  applyTransform();
+
+  try {
+    const last = JSON.parse(localStorage.getItem('manga-reader-last'));
+    if (last?.slug) { load(last.slug, last.chapter ?? 1, last.page ?? 1); return; }
+  } catch {}
   showScreen('welcome');
   refreshUI();
-  renderLibrary();
 })();
 </script>
 </body>
