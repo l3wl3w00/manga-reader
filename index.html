@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Manga Reader</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
   <style>
     @keyframes spin { to { transform: rotate(360deg); } }
     .spin { animation: spin 0.75s linear infinite; }
@@ -18,34 +19,36 @@
 
     body.hide-cursor * { cursor: none !important; }
 
-    /* Transitions */
-    #topbar, #bottombar { transition: opacity 0.3s ease, transform 0.3s ease; }
-    #topbar.hidden    { opacity: 0; transform: translateY(-8px); pointer-events: none; }
-    #bottombar.hidden { opacity: 0; transform: translateY(8px);  pointer-events: none; }
+    #topbar    { transition: opacity 0.3s ease, transform 0.3s ease; }
+    #topbar.hidden    { opacity: 0; transform: translateX(-10px); pointer-events: none; }
+    #bottombar { transition: opacity 0.3s ease, transform 0.3s ease; }
+    #bottombar.hidden { opacity: 0; transform: translateY(8px); pointer-events: none; }
 
-    #lib-panel { transform: translateX(-100%); transition: transform 0.28s cubic-bezier(0.4,0,0.2,1); }
-    #lib-panel.open { transform: translateX(0); }
+    /* Collapsible panel bodies */
+    .panel-body { overflow: hidden; transition: max-height 0.3s ease, opacity 0.3s ease; }
+    .panel-body.collapsed { max-height: 0 !important; opacity: 0; }
 
     #kb-modal  { opacity: 0; pointer-events: none; transform: translate(-50%,-50%) scale(0.96); transition: opacity 0.18s ease, transform 0.18s ease; }
-    #kb-modal.open  { opacity: 1; pointer-events: all; transform: translate(-50%,-50%) scale(1); }
+    #kb-modal.open    { opacity: 1; pointer-events: all; transform: translate(-50%,-50%) scale(1); }
 
     .backdrop { opacity: 0; pointer-events: none; transition: opacity 0.28s ease; }
-    .backdrop.open { opacity: 1; pointer-events: all; }
+    .backdrop.open    { opacity: 1; pointer-events: all; }
 
-    #manga-img { opacity: 0; display: none; transition: opacity 0.2s ease; }
-    #manga-img.show { opacity: 1; }
+    #manga-img  { opacity: 0; display: none; transition: opacity 0.2s ease; }
+    #manga-img.show   { opacity: 1; }
 
-    .overlay-screen { display: none; }
+    .overlay-screen       { display: none; }
     .overlay-screen.active { display: block; }
 
     #progress { transition: width 0.3s ease, opacity 0.3s ease; }
 
-    /* Zone arrow hover */
     .zone:hover .zone-arrow { color: rgba(255,255,255,0.2); }
 
-    /* JS-toggled states */
-    .icon-btn.active { background: rgba(255,255,255,0.1) !important; border-color: rgba(255,255,255,0.22) !important; }
+    .icon-btn.active { background: rgba(255,255,255,0.1) !important; border-color: rgba(255,255,255,0.22) !important; color: rgba(255,255,255,0.9) !important; }
     .kb-key.recording { background: rgba(139,92,246,0.18) !important; border-color: rgba(139,92,246,0.5) !important; color: rgba(255,255,255,0.4) !important; }
+
+    .chevron-btn { transition: transform 0.3s ease; }
+    .chevron-btn.collapsed { transform: rotate(-90deg); }
   </style>
 </head>
 <body class="bg-zinc-950 text-white overflow-hidden h-screen w-screen"
@@ -54,8 +57,8 @@
 <!-- Reader -->
 <div id="reader" class="fixed inset-0 flex items-center justify-center">
   <div id="welcome" class="overlay-screen absolute text-center z-10 pointer-events-none">
-    <h1 class="text-lg font-light tracking-[0.6em] uppercase text-white/[0.13] mb-2">Manga Reader</h1>
-    <p class="text-[11px] tracking-[0.18em] text-white/[0.09]">Open the library or enter a manga name above</p>
+    <h1 class="text-lg font-light tracking-[0.6em] uppercase text-white/[0.12] mb-2">Manga Reader</h1>
+    <p class="text-[11px] tracking-[0.18em] text-white/[0.08]">Open the library or enter a manga name</p>
   </div>
   <div id="loading-screen" class="overlay-screen absolute z-10">
     <div class="spin w-6 h-6 rounded-full border-2 border-white/[0.08] border-t-white/50"></div>
@@ -78,138 +81,171 @@
   <span class="zone-arrow text-5xl font-thin text-transparent transition-colors duration-200 pointer-events-none" style="text-shadow:0 0 24px rgba(0,0,0,0.9)">›</span>
 </div>
 
-<!-- Top bar -->
-<div id="topbar" class="fixed top-0 inset-x-0 z-50 px-4 py-2.5 flex items-center gap-2"
-  style="background:linear-gradient(to bottom,rgba(9,9,11,0.97) 0%,rgba(9,9,11,0.5) 70%,transparent 100%)">
+<!-- Left panel group (auto-hides) -->
+<div id="topbar" class="fixed z-50 flex flex-col gap-2"
+  style="top:2%;left:1.5%;width:18%;min-width:230px;height:96%">
 
-  <!-- Library -->
-  <button id="lib-toggle" class="icon-btn flex items-center justify-center w-8 h-8 shrink-0 rounded-lg
-    border border-white/10 bg-white/[0.04] text-white/50 text-[15px]
-    hover:bg-white/[0.08] hover:text-white/80 transition-all" title="Library">☰</button>
+  <!-- ── Control panel ── -->
+  <div class="rounded-2xl overflow-hidden border border-white/[0.07] bg-zinc-900/90"
+    style="backdrop-filter:blur(16px);box-shadow:0 8px 32px rgba(0,0,0,0.5)">
 
-  <!-- Keybindings -->
-  <button id="kb-toggle" class="icon-btn flex items-center justify-center w-8 h-8 shrink-0 rounded-lg
-    border border-white/10 bg-white/[0.04] text-white/50 text-sm
-    hover:bg-white/[0.08] hover:text-white/80 transition-all" title="Key bindings">⌨</button>
+    <!-- Header -->
+    <div class="flex items-center gap-1.5 px-3 py-2.5 border-b border-white/[0.06]">
+      <span class="text-[10px] tracking-[0.2em] uppercase text-white/30 flex items-center gap-1.5 mr-auto">
+        <i data-lucide="book-open" class="w-3.5 h-3.5"></i> Controls
+      </span>
+      <button id="ctrl-toggle" class="chevron-btn flex items-center justify-center w-7 h-7 rounded-lg
+        text-white/30 hover:text-white/65 hover:bg-white/[0.06] transition-all" title="Collapse">
+        <i data-lucide="chevron-down" class="w-4 h-4"></i>
+      </button>
+    </div>
 
-  <div class="w-px h-5 bg-white/10 mx-1 shrink-0"></div>
+    <!-- Collapsible body -->
+    <div id="ctrl-body" class="panel-body" style="max-height:60vh">
 
-  <!-- Manga -->
-  <div class="flex flex-col gap-0.5 shrink-0">
-    <span class="text-[9px] tracking-[0.14em] uppercase text-white/30 pl-0.5">Manga</span>
-    <div class="flex items-center gap-1">
-      <input id="manga-input" type="text" placeholder="one_piece"
-        spellcheck="false" autocomplete="off" autocapitalize="off"
-        class="w-36 bg-white/[0.04] border border-white/10 rounded-lg text-sm text-white/85
-        px-2.5 py-[5px] placeholder-white/[0.18]
-        focus:outline-none focus:border-white/25 focus:bg-white/[0.06]
-        hover:border-white/[0.16] transition-colors" />
-      <button id="search-btn" title="Search on MangaFreak"
-        class="flex items-center justify-center w-[30px] h-[30px] shrink-0 rounded-lg
-        border border-white/10 bg-white/[0.04] text-white/40 text-sm
-        hover:bg-white/[0.08] hover:text-white/75 transition-all">↗</button>
+      <!-- Manga -->
+      <div class="px-3 pt-2.5 pb-2 border-b border-white/[0.06]">
+        <label class="text-[9px] tracking-[0.15em] uppercase text-white/30 block mb-1.5">Manga</label>
+        <div class="flex items-center gap-1.5">
+          <input id="manga-input" type="text" placeholder="one_piece"
+            spellcheck="false" autocomplete="off" autocapitalize="off"
+            class="flex-1 min-w-0 bg-white/[0.05] border border-white/[0.09] rounded-lg text-sm text-white/85
+            px-2.5 py-1.5 placeholder-white/[0.18]
+            focus:outline-none focus:border-white/25 focus:bg-white/[0.08]
+            hover:border-white/[0.14] transition-colors" />
+          <button id="search-btn" title="Search on MangaFreak"
+            class="flex items-center justify-center w-8 h-8 shrink-0 rounded-lg
+            border border-white/[0.08] bg-white/[0.04] text-white/40
+            hover:bg-white/[0.08] hover:text-white/75 transition-all">
+            <i data-lucide="arrow-up-right" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Chapter + Page -->
+      <div class="flex gap-2 px-3 pt-2.5 pb-2 border-b border-white/[0.06]">
+        <div class="flex-1 min-w-0">
+          <label class="text-[9px] tracking-[0.15em] uppercase text-white/30 block mb-1.5">Chapter</label>
+          <div class="flex items-stretch rounded-lg border border-white/[0.09] bg-white/[0.05] overflow-hidden
+            hover:border-white/[0.16] focus-within:border-white/25 focus-within:bg-white/[0.08] transition-colors">
+            <button id="ch-dec" class="px-2 text-white/35 text-base hover:text-white/75 hover:bg-white/[0.06] transition-all border-r border-white/[0.08] shrink-0 select-none">−</button>
+            <input id="ch-input" type="number" value="1" min="1"
+              class="flex-1 min-w-0 w-0 bg-transparent text-sm text-white/85 py-1.5 text-center focus:outline-none" />
+            <button id="ch-inc" class="px-2 text-white/35 text-base hover:text-white/75 hover:bg-white/[0.06] transition-all border-l border-white/[0.08] shrink-0 select-none">+</button>
+          </div>
+        </div>
+        <div class="flex-1 min-w-0">
+          <label class="text-[9px] tracking-[0.15em] uppercase text-white/30 block mb-1.5">Page</label>
+          <div class="flex items-stretch rounded-lg border border-white/[0.09] bg-white/[0.05] overflow-hidden
+            hover:border-white/[0.16] focus-within:border-white/25 focus-within:bg-white/[0.08] transition-colors">
+            <button id="pg-dec" class="px-2 text-white/35 text-base hover:text-white/75 hover:bg-white/[0.06] transition-all border-r border-white/[0.08] shrink-0 select-none">−</button>
+            <input id="pg-input" type="number" value="1" min="1"
+              class="flex-1 min-w-0 w-0 bg-transparent text-sm text-white/85 py-1.5 text-center focus:outline-none" />
+            <button id="pg-inc" class="px-2 text-white/35 text-base hover:text-white/75 hover:bg-white/[0.06] transition-all border-l border-white/[0.08] shrink-0 select-none">+</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Go + open chapter + keybindings -->
+      <div class="flex gap-1.5 px-3 pt-2.5 pb-2 border-b border-white/[0.06]">
+        <button id="go-btn" class="flex-1 py-1.5 rounded-lg text-sm font-medium
+          bg-violet-500/[0.18] border border-violet-500/[0.38] text-white/90
+          hover:bg-violet-500/30 hover:border-violet-500/60 transition-all">Go</button>
+        <button id="site-btn" title="Open chapter on MangaFreak"
+          class="flex items-center justify-center w-8 h-8 shrink-0 rounded-lg
+          border border-white/[0.08] bg-white/[0.04] text-white/40
+          hover:bg-white/[0.08] hover:text-white/75 transition-all">
+          <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+        </button>
+        <button id="kb-toggle" class="icon-btn flex items-center justify-center w-8 h-8 shrink-0 rounded-lg
+          border border-white/[0.08] bg-white/[0.04] text-white/40
+          hover:bg-white/[0.08] hover:text-white/75 transition-all" title="Key bindings">
+          <i data-lucide="keyboard" class="w-3.5 h-3.5"></i>
+        </button>
+      </div>
+
+      <!-- Page counter -->
     </div>
   </div>
 
-  <div class="w-px h-5 bg-white/10 mx-1 shrink-0"></div>
+  <!-- ── Library panel ── -->
+  <div id="lib-panel" class="rounded-2xl overflow-hidden border border-white/[0.07] bg-zinc-900/90 flex flex-col flex-1 min-h-0"
+    style="backdrop-filter:blur(16px);box-shadow:0 8px 32px rgba(0,0,0,0.5)">
 
-  <!-- Chapter -->
-  <div class="flex flex-col gap-0.5 shrink-0">
-    <span class="text-[9px] tracking-[0.14em] uppercase text-white/30 pl-0.5">Chapter</span>
-    <input id="ch-input" type="number" value="1" min="1"
-      class="w-14 bg-white/[0.04] border border-white/10 rounded-lg text-sm text-white/85
-      px-2 py-[5px] text-center
-      focus:outline-none focus:border-white/25 focus:bg-white/[0.06]
-      hover:border-white/[0.16] transition-colors" />
+    <!-- Header -->
+    <div class="flex items-center gap-1.5 px-3 py-2.5 border-b border-white/[0.06] shrink-0">
+      <span class="text-[10px] tracking-[0.2em] uppercase text-white/35 flex items-center gap-1.5 mr-auto">
+        <i data-lucide="library" class="w-3.5 h-3.5"></i> Library
+      </span>
+      <button id="lib-collapse" class="chevron-btn flex items-center justify-center w-7 h-7 rounded-lg
+        text-white/30 hover:text-white/65 hover:bg-white/[0.06] transition-all" title="Collapse list">
+        <i data-lucide="chevron-down" class="w-4 h-4"></i>
+      </button>
+    </div>
+
+    <div id="lib-list" class="overflow-y-auto scrollbar py-1 flex-1"></div>
   </div>
-
-  <div class="w-px h-5 bg-white/10 mx-1 shrink-0"></div>
-
-  <!-- Page -->
-  <div class="flex flex-col gap-0.5 shrink-0">
-    <span class="text-[9px] tracking-[0.14em] uppercase text-white/30 pl-0.5">Page</span>
-    <input id="pg-input" type="number" value="1" min="1"
-      class="w-14 bg-white/[0.04] border border-white/10 rounded-lg text-sm text-white/85
-      px-2 py-[5px] text-center
-      focus:outline-none focus:border-white/25 focus:bg-white/[0.06]
-      hover:border-white/[0.16] transition-colors" />
-  </div>
-
-  <!-- Go -->
-  <button id="go-btn"
-    class="shrink-0 px-4 py-[5px] rounded-lg text-sm font-medium
-    bg-violet-500/[0.18] border border-violet-500/40 text-white/90
-    hover:bg-violet-500/30 hover:border-violet-500/60 transition-all">Go</button>
-
-  <!-- Open chapter on MF -->
-  <button id="site-btn" title="Open chapter on MangaFreak"
-    class="flex items-center justify-center w-8 h-8 shrink-0 rounded-lg text-sm
-    border border-white/10 bg-white/[0.04] text-white/40
-    hover:bg-white/[0.08] hover:text-white/75 transition-all">↗</button>
-
-  <!-- Page counter -->
-  <div id="info" class="ml-auto text-xs text-white/30 tracking-wide tabular-nums shrink-0"></div>
 </div>
 
 <!-- Bottom bar -->
-<div id="bottombar" class="fixed bottom-0 inset-x-0 z-50 flex items-center justify-center gap-2 px-4 py-3"
-  style="background:linear-gradient(to top,rgba(9,9,11,0.97) 0%,rgba(9,9,11,0.5) 70%,transparent 100%)">
-  <button id="btn-pc" class="px-3 py-1.5 rounded-lg text-xs text-white/55
-    border border-white/[0.08] bg-white/[0.03]
-    hover:bg-white/[0.07] hover:text-white/80 transition-all">← Chapter</button>
-  <button id="btn-pp" class="px-3 py-1.5 rounded-lg text-xs text-white/55
-    border border-white/[0.08] bg-white/[0.03]
-    hover:bg-white/[0.07] hover:text-white/80 transition-all">← Page</button>
-  <button id="btn-np" class="px-3 py-1.5 rounded-lg text-xs text-white/55
-    border border-white/[0.08] bg-white/[0.03]
-    hover:bg-white/[0.07] hover:text-white/80 transition-all">Page →</button>
-  <button id="btn-nc" class="px-3 py-1.5 rounded-lg text-xs text-white/55
-    border border-white/[0.08] bg-white/[0.03]
-    hover:bg-white/[0.07] hover:text-white/80 transition-all">Chapter →</button>
+<div id="bottombar" class="fixed z-50 flex items-center justify-center"
+  style="bottom:2%;left:0;right:0">
+  <div class="flex items-center gap-1.5 px-3 py-2 rounded-2xl border border-white/[0.07] bg-zinc-900/90"
+    style="backdrop-filter:blur(16px);box-shadow:0 8px 32px rgba(0,0,0,0.5)">
+    <button id="btn-pc" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-white/55
+      border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.07] hover:text-white/80 transition-all">
+      <i data-lucide="chevrons-left" class="w-3.5 h-3.5"></i> Chapter
+    </button>
+    <button id="btn-pp" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-white/55
+      border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.07] hover:text-white/80 transition-all">
+      <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i> Page
+    </button>
+    <div id="info" class="px-3 text-xs text-white/40 tracking-wide tabular-nums min-w-[60px] text-center"></div>
+    <button id="btn-np" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-white/55
+      border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.07] hover:text-white/80 transition-all">
+      Page <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+    </button>
+    <button id="btn-nc" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-white/55
+      border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.07] hover:text-white/80 transition-all">
+      Chapter <i data-lucide="chevrons-right" class="w-3.5 h-3.5"></i>
+    </button>
+  </div>
 </div>
 
 <!-- Progress bar -->
 <div id="progress" class="fixed bottom-0 left-0 h-0.5 bg-violet-500 opacity-0 z-[200] pointer-events-none w-0"></div>
 
-<!-- Library panel -->
-<div class="backdrop fixed inset-0 bg-black/55 z-[98]" id="lib-backdrop"></div>
-<div id="lib-panel" class="fixed top-0 left-0 bottom-0 w-72 bg-zinc-900/95 border-r border-white/[0.06] z-[99] flex flex-col backdrop-blur-sm">
-  <div class="flex items-center justify-between px-5 h-14 border-b border-white/[0.06] shrink-0">
-    <span class="text-[10px] tracking-[0.2em] uppercase text-white/30">Library</span>
-    <button id="lib-close" class="flex items-center justify-center w-7 h-7 rounded-md
-      text-white/30 text-lg hover:bg-white/[0.07] hover:text-white/65 transition-all">×</button>
-  </div>
-  <div id="lib-list" class="flex-1 overflow-y-auto scrollbar py-1"></div>
-</div>
-
 <!-- Keybindings modal -->
 <div class="backdrop fixed inset-0 bg-black/55 z-[109]" id="kb-backdrop"></div>
-<div id="kb-modal" class="fixed top-1/2 left-1/2 w-[380px] bg-zinc-900/95 border border-white/[0.08]
-  rounded-2xl z-[110] flex flex-col shadow-2xl backdrop-blur-sm" style="box-shadow:0 24px 80px rgba(0,0,0,0.7)">
+<div id="kb-modal" class="fixed top-1/2 left-1/2 w-[390px] bg-zinc-900/95 border border-white/[0.08]
+  rounded-2xl z-[110] flex flex-col" style="backdrop-filter:blur(16px);box-shadow:0 24px 80px rgba(0,0,0,0.7)">
   <div class="flex items-center justify-between px-5 h-14 border-b border-white/[0.06] shrink-0">
-    <span class="text-[10px] tracking-[0.2em] uppercase text-white/30">Key Bindings</span>
+    <span class="text-[10px] tracking-[0.2em] uppercase text-white/30 flex items-center gap-2">
+      <i data-lucide="keyboard" class="w-3.5 h-3.5"></i> Key Bindings
+    </span>
     <button id="kb-close" class="flex items-center justify-center w-7 h-7 rounded-md
-      text-white/30 text-lg hover:bg-white/[0.07] hover:text-white/65 transition-all">×</button>
+      text-white/30 hover:bg-white/[0.07] hover:text-white/65 transition-all">
+      <i data-lucide="x" class="w-4 h-4"></i>
+    </button>
   </div>
   <div id="kb-body" class="py-2"></div>
   <div class="flex justify-end px-5 py-3.5 border-t border-white/[0.06]">
-    <button id="kb-reset" class="text-xs text-white/30 border border-white/[0.1] rounded-lg px-4 py-1.5
-      hover:text-white/60 hover:border-white/20 transition-all">Reset to defaults</button>
+    <button id="kb-reset" class="flex items-center gap-1.5 text-xs text-white/30 border border-white/[0.1]
+      rounded-lg px-4 py-1.5 hover:text-white/60 hover:border-white/20 transition-all">
+      <i data-lucide="rotate-ccw" class="w-3 h-3"></i> Reset to defaults
+    </button>
   </div>
 </div>
 
 <script>
 (() => {
-  // ── Reader state ─────────────────────────────────────────────
   const s = { manga: '', chapter: 1, page: 1, totalPages: null, busy: false };
 
-  // ── Zoom state ───────────────────────────────────────────────
   const MIN_ZOOM = 1, MAX_ZOOM = 4, ZOOM_STEP = 0.15, PAN_STEP = 80;
   let zoom = 1, panX = 0, panY = 0;
   let mouseX = window.innerWidth / 2, mouseY = window.innerHeight / 2;
   let isDragging = false, dragStart = null, dragPanStart = null;
 
-  // ── Keybindings ──────────────────────────────────────────────
   const KB_STORAGE = 'manga-reader-bindings';
   const DEFAULT_BINDINGS = {
     nextPage: { key: 'ArrowRight', ctrl: true  },
@@ -236,23 +272,14 @@
   let recordingAction = null;
 
   function loadBindings() {
-    try {
-      const s = JSON.parse(localStorage.getItem(KB_STORAGE));
-      return s ? { ...DEFAULT_BINDINGS, ...s } : { ...DEFAULT_BINDINGS };
-    } catch { return { ...DEFAULT_BINDINGS }; }
+    try { const b = JSON.parse(localStorage.getItem(KB_STORAGE)); return b ? { ...DEFAULT_BINDINGS, ...b } : { ...DEFAULT_BINDINGS }; }
+    catch { return { ...DEFAULT_BINDINGS }; }
   }
   function saveBindings() { localStorage.setItem(KB_STORAGE, JSON.stringify(bindings)); }
-  function matchBinding(e, action) {
-    const b = bindings[action];
-    return b && e.key === b.key && !!e.ctrlKey === !!b.ctrl;
-  }
+  function matchBinding(e, action) { const b = bindings[action]; return b && e.key === b.key && !!e.ctrlKey === !!b.ctrl; }
   const ARROW_SYM = { ArrowUp:'↑', ArrowDown:'↓', ArrowLeft:'←', ArrowRight:'→' };
-  function formatKey(b) {
-    if (!b) return '—';
-    return (b.ctrl ? 'Ctrl+' : '') + (ARROW_SYM[b.key] || b.key);
-  }
+  function formatKey(b) { if (!b) return '—'; return (b.ctrl ? 'Ctrl+' : '') + (ARROW_SYM[b.key] || b.key); }
 
-  // ── DOM ──────────────────────────────────────────────────────
   const $ = id => document.getElementById(id);
   const mangaInput  = $('manga-input');
   const chInput     = $('ch-input');
@@ -264,29 +291,42 @@
   const bottombar   = $('bottombar');
   const progressBar = $('progress');
   const libPanel    = $('lib-panel');
-  const libBackdrop = $('lib-backdrop');
   const libList     = $('lib-list');
-  const libToggle   = $('lib-toggle');
   const kbModal     = $('kb-modal');
   const kbBackdrop  = $('kb-backdrop');
   const kbBody      = $('kb-body');
   const kbToggle    = $('kb-toggle');
+  const ctrlBody    = $('ctrl-body');
+  const ctrlToggle  = $('ctrl-toggle');
+  const libCollapse = $('lib-collapse');
   const screens     = { welcome: $('welcome'), loading: $('loading-screen'), error: $('error-screen') };
+
+  // ── Panel collapse ────────────────────────────────────────────
+  ctrlToggle.addEventListener('click', () => {
+    const collapsed = ctrlBody.classList.toggle('collapsed');
+    ctrlToggle.classList.toggle('collapsed', collapsed);
+  });
+
+  libCollapse.addEventListener('click', () => {
+    const collapsed = libList.classList.toggle('hidden');
+    libPanel.classList.toggle('flex-1',   !collapsed);
+    libPanel.classList.toggle('min-h-0',  !collapsed);
+    libPanel.classList.toggle('flex-none', collapsed);
+    libCollapse.classList.toggle('collapsed', collapsed);
+  });
 
   // ── Zoom ─────────────────────────────────────────────────────
   function clampPan() {
     const vw = window.innerWidth, vh = window.innerHeight;
-    panX = Math.max(vw * (1 - zoom), Math.min(0, panX));
-    panY = Math.max(vh * (1 - zoom), Math.min(0, panY));
+    panX = Math.max(vw*(1-zoom), Math.min(0, panX));
+    panY = Math.max(vh*(1-zoom), Math.min(0, panY));
   }
-  function applyTransform() {
-    zoomRoot.style.transform = `translate(${panX}px,${panY}px) scale(${zoom})`;
-  }
-  function setZoom(newZoom) {
-    newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, newZoom));
-    if (newZoom === MIN_ZOOM) { panX = panY = 0; }
-    else { const sc = newZoom / zoom; panX = mouseX - (mouseX - panX) * sc; panY = mouseY - (mouseY - panY) * sc; }
-    zoom = newZoom; clampPan(); applyTransform(); updateCursor();
+  function applyTransform() { zoomRoot.style.transform = `translate(${panX}px,${panY}px) scale(${zoom})`; }
+  function setZoom(nz) {
+    nz = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, nz));
+    if (nz === MIN_ZOOM) { panX = panY = 0; }
+    else { const sc = nz/zoom; panX = mouseX-(mouseX-panX)*sc; panY = mouseY-(mouseY-panY)*sc; }
+    zoom = nz; clampPan(); applyTransform(); updateCursor();
   }
   function resetZoom() { zoom = MIN_ZOOM; panX = panY = 0; applyTransform(); updateCursor(); }
   function updateCursor() {
@@ -296,13 +336,15 @@
 
   document.addEventListener('mousedown', e => {
     if (zoom <= 1) return;
-    if (e.target.closest('button,input,#lib-panel,#kb-modal')) return;
-    isDragging = true; dragStart = { x: e.clientX, y: e.clientY }; dragPanStart = { x: panX, y: panY };
+    if (e.target.closest('button,input,#topbar,#kb-modal')) return;
+    isDragging = true; dragStart = { x:e.clientX, y:e.clientY }; dragPanStart = { x:panX, y:panY };
     updateCursor(); e.preventDefault();
   });
   document.addEventListener('mouseup', () => { if (isDragging) { isDragging = false; updateCursor(); } });
   document.addEventListener('wheel', e => {
-    if (!s.manga) return; e.preventDefault();
+    if (!s.manga) return;
+    if (e.target.closest('.scrollbar, #topbar, #bottombar')) return;
+    e.preventDefault();
     setZoom(zoom + (e.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP));
   }, { passive: false });
 
@@ -323,56 +365,53 @@
     const lib = getLibrary(); delete lib[manga];
     localStorage.setItem(STORAGE_KEY, JSON.stringify(lib)); renderLibrary();
   }
+  function toggleFavourite(manga) {
+    const lib = getLibrary(); if (!lib[manga]) return;
+    lib[manga].favourite = !lib[manga].favourite;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(lib)); renderLibrary();
+  }
   function savedChapterPage(manga, chapter) { return getLibrary()[manga]?.chapters?.[chapter] ?? 1; }
-  function formatName(slug) { return slug.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()); }
+  function formatName(slug) { return slug.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase()); }
 
   // ── Library panel ────────────────────────────────────────────
-  let libOpen = false;
-  function openLibrary()  {
-    libOpen = true; libPanel.classList.add('open'); libBackdrop.classList.add('open'); libToggle.classList.add('active');
-    freezeControls(); renderLibrary();
-  }
-  function closeLibrary() {
-    libOpen = false; libPanel.classList.remove('open'); libBackdrop.classList.remove('open'); libToggle.classList.remove('active');
-  }
+
   function renderLibrary() {
-    const entries = Object.values(getLibrary()).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
-    if (!entries.length) {
-      libList.innerHTML = '<p class="text-xs text-white/[0.18] text-center px-5 py-10 leading-relaxed tracking-wide">Start reading a manga —<br>it will appear here automatically.</p>';
+    const all = Object.values(getLibrary());
+    all.sort((a, b) => {
+      if (!!b.favourite !== !!a.favourite) return b.favourite ? 1 : -1;
+      return (b.updatedAt||0) - (a.updatedAt||0);
+    });
+    if (!all.length) {
+      libList.innerHTML = '<p class="text-xs text-white/[0.18] text-center px-4 py-8 leading-relaxed">Start reading a manga —<br>it will appear here automatically.</p>';
       return;
     }
-    libList.innerHTML = entries.map(e => `
-      <div class="lib-entry flex items-center px-4 py-3 gap-3 cursor-pointer border-b border-white/[0.04] transition-colors${e.slug === s.manga ? ' bg-violet-500/[0.12]' : ' hover:bg-white/[0.04]'}" data-slug="${e.slug}">
+    libList.innerHTML = all.map(e => `
+      <div class="lib-entry flex items-center px-3 py-2.5 gap-2 cursor-pointer border-b border-white/[0.04] transition-colors${e.slug===s.manga?' bg-violet-500/[0.12]':' hover:bg-white/[0.04]'}" data-slug="${e.slug}">
+        <button class="lib-fav shrink-0 text-base leading-none transition-all hover:scale-110 ${e.favourite?'text-yellow-400':'text-white/[0.18] hover:text-yellow-400/70'}"
+          data-slug="${e.slug}" title="${e.favourite?'Unfavourite':'Favourite'}">${e.favourite?'★':'☆'}</button>
         <div class="flex-1 min-w-0">
-          <div class="text-sm text-white/80 truncate">${formatName(e.slug)}</div>
-          <div class="text-xs text-white/30 mt-0.5 tracking-wide">Ch. ${e.lastChapter ?? 1} · Page ${e.lastPage ?? 1}</div>
+          <div class="text-sm truncate ${e.favourite?'text-white/90':'text-white/75'}">${formatName(e.slug)}</div>
+          <div class="text-xs text-white/30 mt-0.5 tracking-wide">Ch. ${e.lastChapter??1} · Page ${e.lastPage??1}</div>
         </div>
-        <button class="lib-del flex items-center justify-center w-6 h-6 rounded text-white/[0.2] text-base
-          hover:bg-white/[0.08] hover:text-white/60 transition-all shrink-0" data-slug="${e.slug}" title="Remove">×</button>
+        <button class="lib-del flex items-center justify-center w-5 h-5 rounded text-white/[0.18] hover:bg-white/[0.08] hover:text-white/60 transition-all shrink-0" data-slug="${e.slug}" title="Remove">×</button>
       </div>`).join('');
     libList.querySelectorAll('.lib-entry').forEach(el => {
       el.addEventListener('click', evt => {
+        const fav = evt.target.closest('.lib-fav');
+        if (fav) { evt.stopPropagation(); toggleFavourite(fav.dataset.slug); return; }
         const del = evt.target.closest('.lib-del');
         if (del) { evt.stopPropagation(); removeEntry(del.dataset.slug); return; }
         const entry = getLibrary()[el.dataset.slug];
-        if (entry) { closeLibrary(); load(entry.slug, entry.lastChapter ?? 1, entry.lastPage ?? 1); }
+        if (entry) { load(entry.slug, entry.lastChapter??1, entry.lastPage??1); }
       });
     });
   }
-  libToggle.addEventListener('click', () => libOpen ? closeLibrary() : openLibrary());
-  $('lib-close').addEventListener('click', closeLibrary);
-  libBackdrop.addEventListener('click', closeLibrary);
 
   // ── Keybindings modal ────────────────────────────────────────
   let kbOpen = false;
-  function openKb()  {
-    kbOpen = true; kbModal.classList.add('open'); kbBackdrop.classList.add('open'); kbToggle.classList.add('active');
-    freezeControls(); renderKb();
-  }
-  function closeKb() {
-    recordingAction = null; kbOpen = false;
-    kbModal.classList.remove('open'); kbBackdrop.classList.remove('open'); kbToggle.classList.remove('active');
-  }
+  function openKb()  { kbOpen=true; kbModal.classList.add('open'); kbBackdrop.classList.add('open'); kbToggle.classList.add('active'); freezeControls(); renderKb(); }
+  function closeKb() { recordingAction=null; kbOpen=false; kbModal.classList.remove('open'); kbBackdrop.classList.remove('open'); kbToggle.classList.remove('active'); }
+
   function renderKb() {
     kbBody.innerHTML = ACTION_GROUPS.map(g => `
       <div class="px-5 pt-3 pb-1 text-[9px] tracking-[0.15em] uppercase text-white/25">${g.label}</div>
@@ -381,30 +420,27 @@
           <span class="text-sm text-white/55">${ACTION_LABELS[a]}</span>
           <button class="kb-key text-xs bg-white/[0.05] border border-white/[0.1] rounded-lg
             px-3 py-1.5 min-w-[96px] text-center text-white/75
-            hover:bg-white/[0.09] hover:border-white/20 transition-all${recordingAction === a ? ' recording' : ''}"
-            data-action="${a}">${recordingAction === a ? 'Press a key…' : formatKey(bindings[a])}</button>
-        </div>`).join('')}
-    `).join('');
+            hover:bg-white/[0.09] hover:border-white/20 transition-all${recordingAction===a?' recording':''}"
+            data-action="${a}">${recordingAction===a?'Press a key…':formatKey(bindings[a])}</button>
+        </div>`).join('')}`).join('');
     kbBody.querySelectorAll('.kb-key').forEach(btn => {
       btn.addEventListener('click', () => { recordingAction = btn.dataset.action; renderKb(); });
     });
   }
-  $('kb-reset').addEventListener('click', () => { bindings = { ...DEFAULT_BINDINGS }; saveBindings(); recordingAction = null; renderKb(); });
+  $('kb-reset').addEventListener('click', () => { bindings={...DEFAULT_BINDINGS}; saveBindings(); recordingAction=null; renderKb(); });
   kbToggle.addEventListener('click', () => kbOpen ? closeKb() : openKb());
   $('kb-close').addEventListener('click', closeKb);
   kbBackdrop.addEventListener('click', closeKb);
 
   // ── URL helpers ──────────────────────────────────────────────
-  function buildUrl(manga, ch, pg) {
-    return `https://images.mangafreak.me/mangas/${manga}/${manga}_${ch}/${manga}_${ch}_${pg}.jpg`;
-  }
-  function normManga(raw) { return raw.trim().toLowerCase().replace(/\s+/g, '_'); }
+  function buildUrl(manga, ch, pg) { return `https://images.mangafreak.me/mangas/${manga}/${manga}_${ch}/${manga}_${ch}_${pg}.jpg`; }
+  function normManga(raw) { return raw.trim().toLowerCase().replace(/\s+/g,'_'); }
 
   // ── Screen switching ─────────────────────────────────────────
   function showScreen(name) {
-    Object.entries(screens).forEach(([k, el]) => el.classList.toggle('active', k === name));
-    if (name === 'image') { imgEl.style.display = 'block'; requestAnimationFrame(() => imgEl.classList.add('show')); }
-    else { imgEl.classList.remove('show'); if (name !== 'loading') imgEl.style.display = 'none'; }
+    Object.entries(screens).forEach(([k,el]) => el.classList.toggle('active', k===name));
+    if (name==='image') { imgEl.style.display='block'; requestAnimationFrame(()=>imgEl.classList.add('show')); }
+    else { imgEl.classList.remove('show'); if (name!=='loading') imgEl.style.display='none'; }
   }
 
   // ── UI refresh ───────────────────────────────────────────────
@@ -413,7 +449,7 @@
     if (s.manga) mangaInput.value = s.manga;
     if (s.totalPages) {
       infoEl.textContent = `${s.page} / ${s.totalPages}`;
-      progressBar.style.width = `${(s.page / s.totalPages) * 100}%`;
+      progressBar.style.width = `${(s.page/s.totalPages)*100}%`;
       progressBar.style.opacity = '1';
     } else {
       infoEl.textContent = s.manga ? `Page ${s.page}` : '';
@@ -422,66 +458,65 @@
   }
 
   // ── Load ─────────────────────────────────────────────────────
-  function load(manga, ch, pg, opts = {}) {
+  function load(manga, ch, pg, opts={}) {
     if (s.busy) return;
     if (!manga) { showScreen('welcome'); return; }
-    s.busy = true; s.manga = manga; s.chapter = ch; s.page = pg; s.totalPages = null;
+    s.busy=true; s.manga=manga; s.chapter=ch; s.page=pg; s.totalPages=null;
     refreshUI(); showScreen('loading');
-    const probe = new Image();
-    probe.referrerPolicy = 'no-referrer';
+    const probe = new Image(); probe.referrerPolicy='no-referrer';
     probe.onload = () => {
-      s.busy = false; imgEl.src = buildUrl(manga, ch, pg); imgEl.style.display = 'block';
-      showScreen('image'); resetZoom(); refreshUI(); saveProgress(manga, ch, pg); probeNext(manga, ch, pg);
+      s.busy=false; imgEl.src=buildUrl(manga,ch,pg); imgEl.style.display='block';
+      showScreen('image'); resetZoom(); refreshUI(); saveProgress(manga,ch,pg); probeNext(manga,ch,pg);
     };
-    probe.onerror = () => { s.busy = false; if (opts.onFail) opts.onFail(); else showScreen('error'); };
-    probe.src = buildUrl(manga, ch, pg);
+    probe.onerror = () => { s.busy=false; if (opts.onFail) opts.onFail(); else showScreen('error'); };
+    probe.src = buildUrl(manga,ch,pg);
   }
   function probeNext(manga, ch, pg) {
-    const t = new Image(); t.referrerPolicy = 'no-referrer';
-    t.onerror = () => { if (s.manga === manga && s.chapter === ch && s.page === pg) { s.totalPages = pg; refreshUI(); } };
-    t.src = buildUrl(manga, ch, pg + 1);
+    const t = new Image(); t.referrerPolicy='no-referrer';
+    t.onerror = () => { if (s.manga===manga&&s.chapter===ch&&s.page===pg) { s.totalPages=pg; refreshUI(); } };
+    t.src = buildUrl(manga,ch,pg+1);
   }
 
   // ── Navigation ───────────────────────────────────────────────
   function nextPage() {
-    if (!s.manga || s.busy) return;
-    if (s.totalPages && s.page >= s.totalPages) { load(s.manga, s.chapter + 1, 1); }
-    else { load(s.manga, s.chapter, s.page + 1, { onFail: () => load(s.manga, s.chapter + 1, 1) }); }
+    if (!s.manga||s.busy) return;
+    if (s.totalPages&&s.page>=s.totalPages) { load(s.manga,s.chapter+1,1); }
+    else { load(s.manga,s.chapter,s.page+1, { onFail:()=>load(s.manga,s.chapter+1,1) }); }
   }
   function prevPage() {
-    if (!s.manga || s.busy) return;
-    if (s.page <= 1) { if (s.chapter > 1) load(s.manga, s.chapter - 1, savedChapterPage(s.manga, s.chapter - 1)); }
-    else { load(s.manga, s.chapter, s.page - 1); }
+    if (!s.manga||s.busy) return;
+    if (s.page<=1) { if (s.chapter>1) load(s.manga,s.chapter-1,savedChapterPage(s.manga,s.chapter-1)); }
+    else { load(s.manga,s.chapter,s.page-1); }
   }
 
   // ── Buttons ──────────────────────────────────────────────────
   $('search-btn').addEventListener('click', () => {
-    const q = mangaInput.value.trim().replace(/_/g, ' ');
-    if (!q) return;
+    const q = mangaInput.value.trim().replace(/_/g,' '); if (!q) return;
     window.open(`https://ww2.mangafreak.me/Find/${encodeURIComponent(q)}`, '_blank');
   });
   $('site-btn').addEventListener('click', () => {
     if (!s.manga) return;
-    const name = s.manga.split('_').map(w => w[0].toUpperCase() + w.slice(1)).join('_');
+    const name = s.manga.split('_').map(w=>w[0].toUpperCase()+w.slice(1)).join('_');
     window.open(`https://ww2.mangafreak.me/Read1_${name}_${s.chapter}`, '_blank');
   });
   $('go-btn').addEventListener('click', () => {
     const manga = normManga(mangaInput.value); if (!manga) return;
-    load(manga, parseInt(chInput.value) || 1, parseInt(pgInput.value) || 1);
+    load(manga, parseInt(chInput.value)||1, parseInt(pgInput.value)||1);
   });
+  $('ch-inc').addEventListener('click', () => { if (s.manga) load(s.manga,s.chapter+1,1); else chInput.value=(parseInt(chInput.value)||1)+1; });
+  $('ch-dec').addEventListener('click', () => { if (s.manga&&s.chapter>1) load(s.manga,s.chapter-1,savedChapterPage(s.manga,s.chapter-1)); else chInput.value=Math.max(1,(parseInt(chInput.value)||1)-1); });
+  $('pg-inc').addEventListener('click', () => { if (s.manga) nextPage(); else pgInput.value=(parseInt(pgInput.value)||1)+1; });
+  $('pg-dec').addEventListener('click', () => { if (s.manga) prevPage(); else pgInput.value=Math.max(1,(parseInt(pgInput.value)||1)-1); });
   $('btn-np').addEventListener('click', nextPage);
   $('btn-pp').addEventListener('click', prevPage);
-  $('btn-nc').addEventListener('click', () => { if (s.manga) load(s.manga, s.chapter + 1, 1); });
-  $('btn-pc').addEventListener('click', () => {
-    if (!s.manga || s.chapter <= 1) return;
-    load(s.manga, s.chapter - 1, savedChapterPage(s.manga, s.chapter - 1));
-  });
+  $('btn-nc').addEventListener('click', () => { if (s.manga) load(s.manga,s.chapter+1,1); });
+  $('btn-pc').addEventListener('click', () => { if (!s.manga||s.chapter<=1) return; load(s.manga,s.chapter-1,savedChapterPage(s.manga,s.chapter-1)); });
   $('zone-l').addEventListener('click', prevPage);
   $('zone-r').addEventListener('click', nextPage);
 
-  mangaInput.addEventListener('keydown', e => { if (e.key === 'Enter') $('go-btn').click(); });
-  chInput.addEventListener('keydown',    e => { if (e.key === 'Enter' && s.manga) load(s.manga, parseInt(chInput.value) || 1, 1); });
-  pgInput.addEventListener('keydown',    e => { if (e.key === 'Enter' && s.manga) load(s.manga, s.chapter, parseInt(pgInput.value) || 1); });
+  mangaInput.addEventListener('keydown', e => { if (e.key==='Enter') $('go-btn').click(); });
+  chInput.addEventListener('keydown',    e => { if (e.key==='Enter'&&s.manga) load(s.manga,parseInt(chInput.value)||1,1); });
+  pgInput.addEventListener('keydown',    e => { if (e.key==='Enter'&&s.manga) load(s.manga,s.chapter,parseInt(pgInput.value)||1); });
 
   document.querySelectorAll('input').forEach(inp => {
     inp.addEventListener('focus', freezeControls);
@@ -492,62 +527,59 @@
   document.addEventListener('keydown', e => {
     if (recordingAction !== null) {
       e.preventDefault();
-      if (e.key === 'Escape') { recordingAction = null; renderKb(); return; }
+      if (e.key==='Escape') { recordingAction=null; renderKb(); return; }
       if (['Control','Shift','Alt','Meta'].includes(e.key)) return;
-      bindings[recordingAction] = { key: e.key, ctrl: e.ctrlKey };
-      saveBindings(); recordingAction = null; renderKb(); return;
+      bindings[recordingAction] = { key:e.key, ctrl:e.ctrlKey };
+      saveBindings(); recordingAction=null; renderKb(); return;
     }
-    if (document.activeElement?.tagName === 'INPUT') { if (e.key === 'Escape') document.activeElement.blur(); return; }
-    if (e.key === 'Escape') { if (libOpen) closeLibrary(); else if (kbOpen) closeKb(); return; }
-    if (e.key === 'f' || e.key === 'F') {
+    if (document.activeElement?.tagName==='INPUT') { if (e.key==='Escape') document.activeElement.blur(); return; }
+    if (e.key==='Escape') { if (kbOpen) closeKb(); return; }
+    if (e.key==='f'||e.key==='F') {
       if (!document.fullscreenElement) document.documentElement.requestFullscreen();
       else document.exitFullscreen(); return;
     }
-    if (matchBinding(e, 'nextPage'))  { e.preventDefault(); nextPage(); return; }
-    if (matchBinding(e, 'prevPage'))  { e.preventDefault(); prevPage(); return; }
-    if (matchBinding(e, 'zoomIn'))    { e.preventDefault(); setZoom(zoom + ZOOM_STEP); return; }
-    if (matchBinding(e, 'zoomOut'))   { e.preventDefault(); setZoom(zoom - ZOOM_STEP); return; }
-    if (matchBinding(e, 'panRight'))  { e.preventDefault(); panX -= PAN_STEP; clampPan(); applyTransform(); return; }
-    if (matchBinding(e, 'panLeft'))   { e.preventDefault(); panX += PAN_STEP; clampPan(); applyTransform(); return; }
-    if (matchBinding(e, 'panDown'))   { e.preventDefault(); panY -= PAN_STEP; clampPan(); applyTransform(); return; }
-    if (matchBinding(e, 'panUp'))     { e.preventDefault(); panY += PAN_STEP; clampPan(); applyTransform(); return; }
+    if (matchBinding(e,'nextPage'))  { e.preventDefault(); nextPage(); return; }
+    if (matchBinding(e,'prevPage'))  { e.preventDefault(); prevPage(); return; }
+    if (matchBinding(e,'zoomIn'))    { e.preventDefault(); setZoom(zoom+ZOOM_STEP); return; }
+    if (matchBinding(e,'zoomOut'))   { e.preventDefault(); setZoom(zoom-ZOOM_STEP); return; }
+    if (matchBinding(e,'panRight'))  { e.preventDefault(); panX-=PAN_STEP; clampPan(); applyTransform(); return; }
+    if (matchBinding(e,'panLeft'))   { e.preventDefault(); panX+=PAN_STEP; clampPan(); applyTransform(); return; }
+    if (matchBinding(e,'panDown'))   { e.preventDefault(); panY-=PAN_STEP; clampPan(); applyTransform(); return; }
+    if (matchBinding(e,'panUp'))     { e.preventDefault(); panY+=PAN_STEP; clampPan(); applyTransform(); return; }
   });
 
   // ── Mouse ────────────────────────────────────────────────────
   document.addEventListener('mousemove', e => {
-    mouseX = e.clientX; mouseY = e.clientY;
-    if (isDragging) {
-      panX = dragPanStart.x + (e.clientX - dragStart.x);
-      panY = dragPanStart.y + (e.clientY - dragStart.y);
-      clampPan(); applyTransform();
-    } else { showControls(); }
+    mouseX=e.clientX; mouseY=e.clientY;
+    if (isDragging) { panX=dragPanStart.x+(e.clientX-dragStart.x); panY=dragPanStart.y+(e.clientY-dragStart.y); clampPan(); applyTransform(); }
+    else { showControls(); }
   });
 
   // ── Auto-hide ────────────────────────────────────────────────
-  let hideTimer = null, cursorTimer = null;
-
+  let hideTimer=null, cursorTimer=null;
   function freezeControls() {
     clearTimeout(hideTimer); clearTimeout(cursorTimer);
     topbar.classList.remove('hidden'); bottombar.classList.remove('hidden');
     document.body.classList.remove('hide-cursor');
   }
   function showControls() {
-    if (libOpen || kbOpen) return;
+    if (kbOpen) return;
     topbar.classList.remove('hidden'); bottombar.classList.remove('hidden');
-    if (zoom <= 1) document.body.classList.remove('hide-cursor');
+    if (zoom<=1) document.body.classList.remove('hide-cursor');
     clearTimeout(hideTimer); clearTimeout(cursorTimer);
-    const inputFocused = document.activeElement?.tagName === 'INPUT';
+    const inputFocused = document.activeElement?.tagName==='INPUT';
     if (s.manga && !inputFocused) {
-      hideTimer   = setTimeout(() => { if (!libOpen && !kbOpen) { topbar.classList.add('hidden'); bottombar.classList.add('hidden'); } }, 2800);
-      cursorTimer = setTimeout(() => { if (!libOpen && !kbOpen && zoom <= 1) document.body.classList.add('hide-cursor'); }, 2800);
+      hideTimer   = setTimeout(()=>{ if (!kbOpen) { topbar.classList.add('hidden'); bottombar.classList.add('hidden'); } }, 2800);
+      cursorTimer = setTimeout(()=>{ if (!kbOpen && zoom<=1) document.body.classList.add('hide-cursor'); }, 2800);
     }
   }
 
   // ── Init ─────────────────────────────────────────────────────
   renderLibrary(); applyTransform();
+  lucide.createIcons();
   try {
     const last = JSON.parse(localStorage.getItem('manga-reader-last'));
-    if (last?.slug) { load(last.slug, last.chapter ?? 1, last.page ?? 1); return; }
+    if (last?.slug) { load(last.slug, last.chapter??1, last.page??1); return; }
   } catch {}
   showScreen('welcome'); refreshUI();
 })();
