@@ -247,16 +247,40 @@
   let isDragging = false, dragStart = null, dragPanStart = null;
 
   const KB_STORAGE = 'manga-reader-bindings';
-  const DEFAULT_BINDINGS = {
-    nextPage: { key: 'ArrowRight', ctrl: true  },
-    prevPage: { key: 'ArrowLeft',  ctrl: true  },
-    zoomIn:   { key: 'ArrowUp',    ctrl: true  },
-    zoomOut:  { key: 'ArrowDown',  ctrl: true  },
-    panUp:    { key: 'ArrowUp',    ctrl: false },
-    panDown:  { key: 'ArrowDown',  ctrl: false },
-    panLeft:  { key: 'ArrowLeft',  ctrl: false },
-    panRight: { key: 'ArrowRight', ctrl: false },
-  };
+  const PRESET_STORAGE = 'manga-reader-preset';
+  const PRESETS = [
+    { id: 'default', label: 'Default', bindings: {
+      nextPage: { key: 'ArrowRight', ctrl: true  },
+      prevPage: { key: 'ArrowLeft',  ctrl: true  },
+      zoomIn:   { key: 'ArrowUp',    ctrl: true  },
+      zoomOut:  { key: 'ArrowDown',  ctrl: true  },
+      panUp:    { key: 'ArrowUp',    ctrl: false },
+      panDown:  { key: 'ArrowDown',  ctrl: false },
+      panLeft:  { key: 'ArrowLeft',  ctrl: false },
+      panRight: { key: 'ArrowRight', ctrl: false },
+    }},
+    { id: 'wasd', label: 'WASD', bindings: {
+      nextPage: { key: 'd',          ctrl: false },
+      prevPage: { key: 'a',          ctrl: false },
+      zoomIn:   { key: 'w',          ctrl: true  },
+      zoomOut:  { key: 's',          ctrl: true  },
+      panUp:    { key: 'w',          ctrl: false },
+      panDown:  { key: 's',          ctrl: false },
+      panLeft:  { key: 'ArrowLeft',  ctrl: false },
+      panRight: { key: 'ArrowRight', ctrl: false },
+    }},
+    { id: 'eating', label: 'Eating', bindings: {
+      nextPage: { key: 'ArrowRight', ctrl: false },
+      prevPage: { key: 'ArrowLeft',  ctrl: false },
+      zoomIn:   { key: 'ArrowUp',    ctrl: false },
+      zoomOut:  { key: 'ArrowDown',  ctrl: false },
+      panUp:    { key: 'ArrowUp',    ctrl: true  },
+      panDown:  { key: 'ArrowDown',  ctrl: true  },
+      panLeft:  { key: 'ArrowLeft',  ctrl: true  },
+      panRight: { key: 'ArrowRight', ctrl: true  },
+    }},
+  ];
+  const DEFAULT_BINDINGS = PRESETS[0].bindings;
   const ACTION_GROUPS = [
     { label: 'Navigation', actions: ['nextPage','prevPage'] },
     { label: 'Zoom',       actions: ['zoomIn','zoomOut']   },
@@ -269,6 +293,7 @@
     panLeft:'Pan left',   panRight:'Pan right',
   };
   let bindings = loadBindings();
+  let activePreset = localStorage.getItem(PRESET_STORAGE) || (!localStorage.getItem(KB_STORAGE) ? 'default' : null);
   let recordingAction = null;
 
   function loadBindings() {
@@ -276,6 +301,19 @@
     catch { return { ...DEFAULT_BINDINGS }; }
   }
   function saveBindings() { localStorage.setItem(KB_STORAGE, JSON.stringify(bindings)); }
+  function applyPreset(id) {
+    const p = PRESETS.find(p => p.id === id); if (!p) return;
+    bindings = { ...p.bindings }; activePreset = id;
+    saveBindings(); localStorage.setItem(PRESET_STORAGE, id);
+  }
+  const NAMES_STORAGE = 'manga-reader-preset-names';
+  let renamingPreset = null;
+  function getPresetNames() { try { return JSON.parse(localStorage.getItem(NAMES_STORAGE)) || {}; } catch { return {}; } }
+  function getPresetLabel(id) { return getPresetNames()[id] || PRESETS.find(p => p.id === id)?.label || id; }
+  function savePresetName(id, name) {
+    const names = getPresetNames(); names[id] = name;
+    localStorage.setItem(NAMES_STORAGE, JSON.stringify(names));
+  }
   function matchBinding(e, action) { const b = bindings[action]; return b && e.key === b.key && !!e.ctrlKey === !!b.ctrl; }
   const ARROW_SYM = { ArrowUp:'↑', ArrowDown:'↓', ArrowLeft:'←', ArrowRight:'→' };
   function formatKey(b) { if (!b) return '—'; return (b.ctrl ? 'Ctrl+' : '') + (ARROW_SYM[b.key] || b.key); }
@@ -487,10 +525,34 @@
   // ── Keybindings modal ────────────────────────────────────────
   let kbOpen = false;
   function openKb()  { kbOpen=true; kbModal.classList.add('open'); kbBackdrop.classList.add('open'); kbToggle.classList.add('active'); freezeControls(); renderKb(); }
-  function closeKb() { recordingAction=null; kbOpen=false; kbModal.classList.remove('open'); kbBackdrop.classList.remove('open'); kbToggle.classList.remove('active'); }
+  function closeKb() { recordingAction=null; renamingPreset=null; kbOpen=false; kbModal.classList.remove('open'); kbBackdrop.classList.remove('open'); kbToggle.classList.remove('active'); }
 
   function renderKb() {
-    kbBody.innerHTML = ACTION_GROUPS.map(g => `
+    const presetBar = `
+      <div class="flex gap-1.5 px-5 py-3 border-b border-white/[0.06]">
+        ${PRESETS.map(p => {
+          const label = getPresetLabel(p.id);
+          const isActive = activePreset === p.id;
+          if (renamingPreset === p.id) return `
+            <div class="flex-1 flex items-center rounded-lg border border-violet-500/[0.38] bg-violet-500/[0.08] px-2.5">
+              <input class="preset-rename-input flex-1 min-w-0 bg-transparent text-xs text-white/90 focus:outline-none py-1.5"
+                data-preset="${p.id}" value="${label}" maxlength="24" />
+            </div>`;
+          return `
+            <div class="group/p relative flex-1">
+              <button class="preset-switch w-full py-1.5 rounded-lg text-xs border transition-all
+                ${isActive
+                  ? 'bg-violet-500/[0.18] border-violet-500/[0.38] text-white/90'
+                  : 'bg-white/[0.04] border-white/[0.08] text-white/45 hover:bg-white/[0.08] hover:text-white/75'}"
+                data-preset="${p.id}">${label}</button>
+              <button class="preset-rename-btn absolute inset-y-0 right-1.5 my-auto w-4 h-4 rounded
+                flex items-center justify-center text-[11px] leading-none
+                text-white/30 hover:text-white/70 transition-all
+                opacity-0 group-hover/p:opacity-100" data-preset="${p.id}" title="Rename">✎</button>
+            </div>`;
+        }).join('')}
+      </div>`;
+    kbBody.innerHTML = presetBar + ACTION_GROUPS.map(g => `
       <div class="px-5 pt-3 pb-1 text-[9px] tracking-[0.15em] uppercase text-white/25">${g.label}</div>
       ${g.actions.map(a => `
         <div class="flex items-center justify-between px-5 py-1.5 gap-4">
@@ -500,11 +562,30 @@
             hover:bg-white/[0.09] hover:border-white/20 transition-all${recordingAction===a?' recording':''}"
             data-action="${a}">${recordingAction===a?'Press a key…':formatKey(bindings[a])}</button>
         </div>`).join('')}`).join('');
+    kbBody.querySelectorAll('.preset-switch').forEach(btn => {
+      btn.addEventListener('click', () => { applyPreset(btn.dataset.preset); recordingAction = null; renderKb(); });
+    });
+    kbBody.querySelectorAll('.preset-rename-btn').forEach(btn => {
+      btn.addEventListener('click', () => { renamingPreset = btn.dataset.preset; renderKb(); });
+    });
+    kbBody.querySelectorAll('.preset-rename-input').forEach(inp => {
+      inp.focus(); inp.select();
+      const commit = () => {
+        const name = inp.value.trim();
+        if (name) savePresetName(inp.dataset.preset, name);
+        renamingPreset = null; renderKb();
+      };
+      inp.addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); commit(); }
+        if (e.key === 'Escape') { e.stopPropagation(); renamingPreset = null; renderKb(); }
+      });
+      inp.addEventListener('blur', commit);
+    });
     kbBody.querySelectorAll('.kb-key').forEach(btn => {
       btn.addEventListener('click', () => { recordingAction = btn.dataset.action; renderKb(); });
     });
   }
-  $('kb-reset').addEventListener('click', () => { bindings={...DEFAULT_BINDINGS}; saveBindings(); recordingAction=null; renderKb(); });
+  $('kb-reset').addEventListener('click', () => { applyPreset('default'); recordingAction=null; renderKb(); });
   kbToggle.addEventListener('click', () => kbOpen ? closeKb() : openKb());
   $('kb-close').addEventListener('click', closeKb);
   kbBackdrop.addEventListener('click', closeKb);
@@ -619,6 +700,7 @@
       if (e.key==='Escape') { recordingAction=null; renderKb(); return; }
       if (['Control','Shift','Alt','Meta'].includes(e.key)) return;
       bindings[recordingAction] = { key:e.key, ctrl:e.ctrlKey };
+      activePreset = null; localStorage.removeItem(PRESET_STORAGE);
       saveBindings(); recordingAction=null; renderKb(); return;
     }
     if (document.activeElement?.tagName==='INPUT') { if (e.key==='Escape') document.activeElement.blur(); return; }
