@@ -49,6 +49,10 @@
 
     .chevron-btn { transition: transform 0.3s ease; }
     .chevron-btn.collapsed { transform: rotate(-90deg); }
+
+    .settings-tab { padding: 0.2rem 0.65rem; border-radius: 0.45rem; font-size: 0.7rem; letter-spacing: 0.05em; border: 1px solid transparent; transition: all 0.15s; color: rgba(255,255,255,0.3); }
+    .settings-tab:hover { color: rgba(255,255,255,0.6); background: rgba(255,255,255,0.05); }
+    .settings-tab.active { color: rgba(255,255,255,0.85); background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.12); }
   </style>
 </head>
 <body class="bg-zinc-950 text-white overflow-hidden h-screen w-screen"
@@ -74,6 +78,7 @@
 </div>
 
 <!-- Click zones -->
+<div id="zone-c" class="fixed top-0 bottom-0 left-[28%] right-[28%] z-10"></div>
 <div id="zone-l" class="zone fixed top-0 bottom-0 left-0 w-[28%] z-10 flex items-center pl-5">
   <span class="zone-arrow text-5xl font-thin text-transparent transition-colors duration-200 pointer-events-none" style="text-shadow:0 0 24px rgba(0,0,0,0.9)">‹</span>
 </div>
@@ -162,9 +167,13 @@
           hover:bg-white/[0.08] hover:text-white/75 transition-all" title="Key bindings">
           <i data-lucide="keyboard" class="w-3.5 h-3.5"></i>
         </button>
+        <button id="fit-toggle" class="icon-btn flex items-center justify-center w-8 h-8 shrink-0 rounded-lg
+          border border-white/[0.08] bg-white/[0.04] text-white/40
+          hover:bg-white/[0.08] hover:text-white/75 transition-all" title="Auto-fit zoom on page turn">
+          <i data-lucide="maximize-2" class="w-3.5 h-3.5"></i>
+        </button>
       </div>
 
-      <!-- Page counter -->
     </div>
   </div>
 
@@ -215,26 +224,56 @@
 <!-- Progress bar -->
 <div id="progress" class="fixed bottom-0 left-0 h-0.5 bg-violet-500 opacity-0 z-[200] pointer-events-none w-0"></div>
 
-<!-- Keybindings modal -->
+<!-- Settings modal -->
 <div class="backdrop fixed inset-0 bg-black/55 z-[109]" id="kb-backdrop"></div>
-<div id="kb-modal" class="fixed top-1/2 left-1/2 w-[390px] bg-zinc-900/95 border border-white/[0.08]
-  rounded-2xl z-[110] flex flex-col" style="backdrop-filter:blur(16px);box-shadow:0 24px 80px rgba(0,0,0,0.7)">
-  <div class="flex items-center justify-between px-5 h-14 border-b border-white/[0.06] shrink-0">
-    <span class="text-[10px] tracking-[0.2em] uppercase text-white/30 flex items-center gap-2">
-      <i data-lucide="keyboard" class="w-3.5 h-3.5"></i> Key Bindings
-    </span>
+<div id="kb-modal" class="fixed top-1/2 left-1/2 w-[420px] max-h-[85vh] bg-zinc-900/95 border border-white/[0.08]
+  rounded-2xl z-[110] flex flex-col overflow-hidden" style="backdrop-filter:blur(16px);box-shadow:0 24px 80px rgba(0,0,0,0.7)">
+
+  <!-- Tab header -->
+  <div class="flex items-center gap-1 px-4 h-12 border-b border-white/[0.06] shrink-0">
+    <button id="tab-kb"   class="settings-tab active">Keybindings</button>
+    <button id="tab-zoom" class="settings-tab">Zoom</button>
+    <div class="flex-1"></div>
     <button id="kb-close" class="flex items-center justify-center w-7 h-7 rounded-md
       text-white/30 hover:bg-white/[0.07] hover:text-white/65 transition-all">
       <i data-lucide="x" class="w-4 h-4"></i>
     </button>
   </div>
-  <div id="kb-body" class="py-2"></div>
-  <div class="flex justify-end px-5 py-3.5 border-t border-white/[0.06]">
-    <button id="kb-reset" class="flex items-center gap-1.5 text-xs text-white/30 border border-white/[0.1]
-      rounded-lg px-4 py-1.5 hover:text-white/60 hover:border-white/20 transition-all">
-      <i data-lucide="rotate-ccw" class="w-3 h-3"></i> Reset to defaults
-    </button>
+
+  <!-- Keybindings panel -->
+  <div id="settings-kb-panel" class="flex flex-col flex-1 min-h-0 overflow-hidden">
+    <div id="kb-body" class="py-2 overflow-y-auto scrollbar flex-1"></div>
+    <div class="flex justify-end px-5 py-3.5 border-t border-white/[0.06] shrink-0">
+      <button id="kb-reset" class="flex items-center gap-1.5 text-xs text-white/30 border border-white/[0.1]
+        rounded-lg px-4 py-1.5 hover:text-white/60 hover:border-white/20 transition-all">
+        <i data-lucide="rotate-ccw" class="w-3 h-3"></i> Reset to defaults
+      </button>
+    </div>
   </div>
+
+  <!-- Zoom settings panel -->
+  <div id="settings-zoom-panel" class="p-5 flex flex-col gap-4" style="display:none">
+    <p class="text-[10px] text-white/25 leading-relaxed">Applied on every page turn when auto-fit zoom is enabled.</p>
+    <div class="flex gap-4">
+      <div class="flex-1">
+        <label class="text-[9px] tracking-[0.15em] uppercase text-white/30 block mb-1.5">Height %</label>
+        <input id="fit-height-input" type="number" min="10" max="100"
+          class="w-full bg-white/[0.05] border border-white/[0.09] rounded-lg text-sm text-white/85
+          px-2.5 py-2 text-center focus:outline-none focus:border-white/25 focus:bg-white/[0.08]
+          hover:border-white/[0.14] transition-colors" />
+        <p class="text-[9px] text-white/20 mt-1.5">% of image height visible</p>
+      </div>
+      <div class="flex-1">
+        <label class="text-[9px] tracking-[0.15em] uppercase text-white/30 block mb-1.5">Max Width %</label>
+        <input id="fit-width-input" type="number" min="10" max="200"
+          class="w-full bg-white/[0.05] border border-white/[0.09] rounded-lg text-sm text-white/85
+          px-2.5 py-2 text-center focus:outline-none focus:border-white/25 focus:bg-white/[0.08]
+          hover:border-white/[0.14] transition-colors" />
+        <p class="text-[9px] text-white/20 mt-1.5">Max % of viewport width</p>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -248,49 +287,70 @@
 
   const KB_STORAGE = 'manga-reader-bindings';
   const PRESET_STORAGE = 'manga-reader-preset';
+  const AUTOZOOM_STORAGE = 'manga-reader-autozoom';
+  const FITZOOM_STORAGE  = 'manga-reader-fitzoom';
+  let autoFit    = JSON.parse(localStorage.getItem(AUTOZOOM_STORAGE) || 'false');
+  let fitSettings = { heightPct: 60, maxWidthPct: 90, ...JSON.parse(localStorage.getItem(FITZOOM_STORAGE) || '{}') };
+  function saveFitSettings() { localStorage.setItem(FITZOOM_STORAGE, JSON.stringify(fitSettings)); }
   const PRESETS = [
     { id: 'default', label: 'Default', bindings: {
-      nextPage: { key: 'ArrowRight', ctrl: true  },
-      prevPage: { key: 'ArrowLeft',  ctrl: true  },
-      zoomIn:   { key: 'ArrowUp',    ctrl: true  },
-      zoomOut:  { key: 'ArrowDown',  ctrl: true  },
-      panUp:    { key: 'ArrowUp',    ctrl: false },
-      panDown:  { key: 'ArrowDown',  ctrl: false },
-      panLeft:  { key: 'ArrowLeft',  ctrl: false },
-      panRight: { key: 'ArrowRight', ctrl: false },
+      nextPage:   { key: 'ArrowRight', ctrl: true  },
+      prevPage:   { key: 'ArrowLeft',  ctrl: true  },
+      zoomIn:     { key: 'ArrowUp',    ctrl: true  },
+      zoomOut:    { key: 'ArrowDown',  ctrl: true  },
+      panUp:      { key: 'ArrowUp',    ctrl: false },
+      panDown:    { key: 'ArrowDown',  ctrl: false },
+      panLeft:    { key: 'ArrowLeft',  ctrl: false },
+      panRight:   { key: 'ArrowRight', ctrl: false },
+      jumpVert:     { key: ' ',          ctrl: false },
+      fullscreen:   { key: 'f',          ctrl: false },
+      togglePanels: { key: 'Control',    ctrl: true  },
+      peekPanels:   { key: 'Tab',        ctrl: false },
     }},
     { id: 'wasd', label: 'WASD', bindings: {
-      nextPage: { key: 'd',          ctrl: false },
-      prevPage: { key: 'a',          ctrl: false },
-      zoomIn:   { key: 'w',          ctrl: true  },
-      zoomOut:  { key: 's',          ctrl: true  },
-      panUp:    { key: 'w',          ctrl: false },
-      panDown:  { key: 's',          ctrl: false },
-      panLeft:  { key: 'ArrowLeft',  ctrl: false },
-      panRight: { key: 'ArrowRight', ctrl: false },
+      nextPage:   { key: 'd',          ctrl: false },
+      prevPage:   { key: 'a',          ctrl: false },
+      zoomIn:     { key: 'w',          ctrl: true  },
+      zoomOut:    { key: 's',          ctrl: true  },
+      panUp:      { key: 'w',          ctrl: false },
+      panDown:    { key: 's',          ctrl: false },
+      panLeft:    { key: 'ArrowLeft',  ctrl: false },
+      panRight:   { key: 'ArrowRight', ctrl: false },
+      jumpVert:     { key: ' ',          ctrl: false },
+      fullscreen:   { key: 'f',          ctrl: false },
+      togglePanels: { key: 'Control',    ctrl: true  },
+      peekPanels:   { key: 'Tab',        ctrl: false },
     }},
     { id: 'eating', label: 'Eating', bindings: {
-      nextPage: { key: 'ArrowRight', ctrl: false },
-      prevPage: { key: 'ArrowLeft',  ctrl: false },
-      zoomIn:   { key: 'ArrowUp',    ctrl: false },
-      zoomOut:  { key: 'ArrowDown',  ctrl: false },
-      panUp:    { key: 'ArrowUp',    ctrl: true  },
-      panDown:  { key: 'ArrowDown',  ctrl: true  },
-      panLeft:  { key: 'ArrowLeft',  ctrl: true  },
-      panRight: { key: 'ArrowRight', ctrl: true  },
+      nextPage:   { key: 'ArrowRight', ctrl: false },
+      prevPage:   { key: 'ArrowLeft',  ctrl: false },
+      zoomIn:     { key: 'ArrowUp',    ctrl: false },
+      zoomOut:    { key: 'ArrowDown',  ctrl: false },
+      panUp:      { key: 'ArrowUp',    ctrl: true  },
+      panDown:    { key: 'ArrowDown',  ctrl: true  },
+      panLeft:    { key: 'ArrowLeft',  ctrl: true  },
+      panRight:   { key: 'ArrowRight', ctrl: true  },
+      jumpVert:     { key: ' ',          ctrl: false },
+      fullscreen:   { key: 'f',          ctrl: false },
+      togglePanels: { key: 'Control',    ctrl: true  },
+      peekPanels:   { key: 'Tab',        ctrl: false },
     }},
   ];
   const DEFAULT_BINDINGS = PRESETS[0].bindings;
   const ACTION_GROUPS = [
-    { label: 'Navigation', actions: ['nextPage','prevPage'] },
-    { label: 'Zoom',       actions: ['zoomIn','zoomOut']   },
+    { label: 'Navigation', actions: ['nextPage','prevPage','jumpVert'] },
+    { label: 'Zoom',       actions: ['zoomIn','zoomOut']               },
     { label: 'Pan',        actions: ['panUp','panDown','panLeft','panRight'] },
+    { label: 'Other',      actions: ['fullscreen']                     },
+    { label: 'View',       actions: ['togglePanels','peekPanels']      },
   ];
   const ACTION_LABELS = {
-    nextPage:'Next page', prevPage:'Previous page',
-    zoomIn:'Zoom in',     zoomOut:'Zoom out',
-    panUp:'Pan up',       panDown:'Pan down',
-    panLeft:'Pan left',   panRight:'Pan right',
+    nextPage:'Next page',     prevPage:'Previous page',
+    zoomIn:'Zoom in',         zoomOut:'Zoom out',
+    panUp:'Pan up',           panDown:'Pan down',
+    panLeft:'Pan left',       panRight:'Pan right',
+    jumpVert:'Jump top/bottom', fullscreen:'Fullscreen',
+    togglePanels:'Toggle panels', peekPanels:'Peek panels',
   };
   let bindings = loadBindings();
   let activePreset = localStorage.getItem(PRESET_STORAGE) || (!localStorage.getItem(KB_STORAGE) ? 'default' : null);
@@ -315,8 +375,8 @@
     localStorage.setItem(NAMES_STORAGE, JSON.stringify(names));
   }
   function matchBinding(e, action) { const b = bindings[action]; return b && e.key === b.key && !!e.ctrlKey === !!b.ctrl; }
-  const ARROW_SYM = { ArrowUp:'↑', ArrowDown:'↓', ArrowLeft:'←', ArrowRight:'→' };
-  function formatKey(b) { if (!b) return '—'; return (b.ctrl ? 'Ctrl+' : '') + (ARROW_SYM[b.key] || b.key); }
+  const ARROW_SYM = { ArrowUp:'↑', ArrowDown:'↓', ArrowLeft:'←', ArrowRight:'→', ' ':'Space' };
+  function formatKey(b) { if (!b) return '—'; if (b.key==='Control') return 'Ctrl'; return (b.ctrl ? 'Ctrl+' : '') + (ARROW_SYM[b.key] || b.key); }
 
   const $ = id => document.getElementById(id);
   const mangaInput  = $('manga-input');
@@ -367,6 +427,16 @@
     zoom = nz; clampPan(); applyTransform(); updateCursor();
   }
   function resetZoom() { zoom = MIN_ZOOM; panX = panY = 0; applyTransform(); updateCursor(); }
+  function autoFitZoom(iw, ih) {
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const scale = Math.min(vw / iw, vh / ih);
+    const rw = iw * scale, rh = ih * scale;
+    const ry = (vh - rh) / 2;
+    zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, Math.min((fitSettings.maxWidthPct/100) * vw / rw, vh / ((fitSettings.heightPct/100) * rh))));
+    panX = vw * (1 - zoom) / 2;
+    panY = -ry * zoom;
+    clampPan(); applyTransform(); updateCursor();
+  }
   function updateCursor() {
     if (zoom > 1) { document.body.classList.remove('hide-cursor'); document.body.style.cursor = isDragging ? 'grabbing' : 'grab'; }
     else { document.body.style.cursor = ''; }
@@ -524,8 +594,16 @@
 
   // ── Keybindings modal ────────────────────────────────────────
   let kbOpen = false;
-  function openKb()  { kbOpen=true; kbModal.classList.add('open'); kbBackdrop.classList.add('open'); kbToggle.classList.add('active'); freezeControls(); renderKb(); }
-  function closeKb() { recordingAction=null; renamingPreset=null; kbOpen=false; kbModal.classList.remove('open'); kbBackdrop.classList.remove('open'); kbToggle.classList.remove('active'); }
+  let activeSettingsTab = 'kb';
+  function switchSettingsTab(tab) {
+    activeSettingsTab = tab;
+    $('settings-kb-panel').style.display   = tab==='kb'   ? '' : 'none';
+    $('settings-zoom-panel').style.display = tab==='zoom' ? '' : 'none';
+    $('tab-kb').classList.toggle('active',   tab==='kb');
+    $('tab-zoom').classList.toggle('active', tab==='zoom');
+  }
+  function openKb()  { kbOpen=true; kbModal.classList.add('open'); kbBackdrop.classList.add('open'); kbToggle.classList.add('active'); applyPanelState(); renderKb(); }
+  function closeKb() { recordingAction=null; renamingPreset=null; kbOpen=false; kbModal.classList.remove('open'); kbBackdrop.classList.remove('open'); kbToggle.classList.remove('active'); applyPanelState(); }
 
   function renderKb() {
     const presetBar = `
@@ -586,9 +664,29 @@
     });
   }
   $('kb-reset').addEventListener('click', () => { applyPreset('default'); recordingAction=null; renderKb(); });
+  $('tab-kb').addEventListener('click',   () => switchSettingsTab('kb'));
+  $('tab-zoom').addEventListener('click', () => switchSettingsTab('zoom'));
   kbToggle.addEventListener('click', () => kbOpen ? closeKb() : openKb());
   $('kb-close').addEventListener('click', closeKb);
   kbBackdrop.addEventListener('click', closeKb);
+  $('fit-height-input').value = fitSettings.heightPct;
+  $('fit-width-input').value  = fitSettings.maxWidthPct;
+  function onFitSettingChange() {
+    const h = Math.min(100, Math.max(10, parseInt($('fit-height-input').value) || 60));
+    const w = Math.max(10, parseInt($('fit-width-input').value) || 90);
+    fitSettings = { heightPct: h, maxWidthPct: w };
+    saveFitSettings();
+    if (autoFit && s.manga && imgEl.naturalWidth) autoFitZoom(imgEl.naturalWidth, imgEl.naturalHeight);
+  }
+  $('fit-height-input').addEventListener('change', onFitSettingChange);
+  $('fit-width-input').addEventListener('change',  onFitSettingChange);
+
+  $('fit-toggle').addEventListener('click', () => {
+    autoFit = !autoFit;
+    localStorage.setItem(AUTOZOOM_STORAGE, JSON.stringify(autoFit));
+    $('fit-toggle').classList.toggle('active', autoFit);
+    if (autoFit && s.manga && imgEl.naturalWidth) autoFitZoom(imgEl.naturalWidth, imgEl.naturalHeight);
+  });
 
   // ── URL helpers ──────────────────────────────────────────────
   function buildUrl(manga, ch, pg) { return `https://images.mangafreak.me/mangas/${manga}/${manga}_${ch}/${manga}_${ch}_${pg}.jpg`; }
@@ -619,12 +717,13 @@
   function load(manga, ch, pg, opts={}) {
     if (s.busy) return;
     if (!manga) { showScreen('welcome'); return; }
+    const newManga = manga !== s.manga;
     s.busy=true; s.manga=manga; s.chapter=ch; s.page=pg; s.totalPages=null;
     refreshUI(); showScreen('loading');
     const probe = new Image(); probe.referrerPolicy='no-referrer';
     probe.onload = () => {
       s.busy=false; imgEl.src=buildUrl(manga,ch,pg); imgEl.style.display='block';
-      showScreen('image'); resetZoom(); refreshUI(); saveProgress(manga,ch,pg); probeNext(manga,ch,pg);
+      showScreen('image'); if (autoFit) autoFitZoom(probe.naturalWidth, probe.naturalHeight); else if (newManga) resetZoom(); refreshUI(); saveProgress(manga,ch,pg); probeNext(manga,ch,pg);
     };
     probe.onerror = () => { s.busy=false; if (opts.onFail) opts.onFail(); else showScreen('error'); };
     probe.src = buildUrl(manga,ch,pg);
@@ -688,10 +787,6 @@
   chInput.addEventListener('keydown',    e => { if (e.key==='Enter'&&s.manga) load(s.manga,parseInt(chInput.value)||1,1); });
   pgInput.addEventListener('keydown',    e => { if (e.key==='Enter'&&s.manga) load(s.manga,s.chapter,parseInt(pgInput.value)||1); });
 
-  document.querySelectorAll('input').forEach(inp => {
-    inp.addEventListener('focus', freezeControls);
-    inp.addEventListener('blur',  showControls);
-  });
 
   // ── Keyboard ─────────────────────────────────────────────────
   document.addEventListener('keydown', e => {
@@ -705,10 +800,17 @@
     }
     if (document.activeElement?.tagName==='INPUT') { if (e.key==='Escape') document.activeElement.blur(); return; }
     if (e.key==='Escape') { if (kbOpen) closeKb(); return; }
-    if (e.key==='f'||e.key==='F') {
+    if (matchBinding(e,'fullscreen')) {
       if (!document.fullscreenElement) document.documentElement.requestFullscreen();
       else document.exitFullscreen(); return;
     }
+    if (matchBinding(e,'jumpVert')) {
+      e.preventDefault();
+      if (s.manga) { const minY = window.innerHeight*(1-zoom); panY = panY > minY/2 ? minY : 0; clampPan(); applyTransform(); }
+      return;
+    }
+    if (matchBinding(e,'togglePanels')) { e.preventDefault(); panelsLocked=!panelsLocked; applyPanelState(); return; }
+    if (matchBinding(e,'peekPanels'))  { e.preventDefault(); if (!peeking) { peeking=true; applyPanelState(); } return; }
     if (matchBinding(e,'nextPage'))  { e.preventDefault(); nextPageFull(); return; }
     if (matchBinding(e,'prevPage'))  { e.preventDefault(); prevPageFull(); return; }
     if (matchBinding(e,'zoomIn'))    { e.preventDefault(); setZoom(zoom+ZOOM_STEP); return; }
@@ -719,35 +821,31 @@
     if (matchBinding(e,'panUp'))     { e.preventDefault(); panY+=PAN_STEP; clampPan(); applyTransform(); return; }
   });
 
+  document.addEventListener('keyup', e => {
+    if (document.activeElement?.tagName==='INPUT') return;
+    if (matchBinding(e,'peekPanels')) { peeking=false; applyPanelState(); }
+  });
+
+  $('zone-c').addEventListener('click', () => { panelsLocked=!panelsLocked; applyPanelState(); });
+
   // ── Mouse ────────────────────────────────────────────────────
   document.addEventListener('mousemove', e => {
     mouseX=e.clientX; mouseY=e.clientY;
     if (isDragging) { panX=dragPanStart.x+(e.clientX-dragStart.x); panY=dragPanStart.y+(e.clientY-dragStart.y); clampPan(); applyTransform(); }
-    else { showControls(); }
   });
 
-  // ── Auto-hide ────────────────────────────────────────────────
-  let hideTimer=null, cursorTimer=null;
-  function freezeControls() {
-    clearTimeout(hideTimer); clearTimeout(cursorTimer);
-    topbar.classList.remove('hidden'); bottombar.classList.remove('hidden');
-    document.body.classList.remove('hide-cursor');
-  }
-  function showControls() {
-    if (kbOpen) return;
-    topbar.classList.remove('hidden'); bottombar.classList.remove('hidden');
-    if (zoom<=1) document.body.classList.remove('hide-cursor');
-    clearTimeout(hideTimer); clearTimeout(cursorTimer);
-    const inputFocused = document.activeElement?.tagName==='INPUT';
-    if (s.manga && !inputFocused) {
-      hideTimer   = setTimeout(()=>{ if (!kbOpen) { topbar.classList.add('hidden'); bottombar.classList.add('hidden'); } }, 2800);
-      cursorTimer = setTimeout(()=>{ if (!kbOpen && zoom<=1) document.body.classList.add('hide-cursor'); }, 2800);
-    }
+  // ── Panel visibility ──────────────────────────────────────────
+  let panelsLocked = true, peeking = false;
+  function applyPanelState() {
+    const show = panelsLocked || peeking || kbOpen;
+    topbar.classList.toggle('hidden', !show);
+    bottombar.classList.toggle('hidden', !show);
   }
 
   // ── Init ─────────────────────────────────────────────────────
   renderLibrary(); applyTransform();
   lucide.createIcons();
+  $('fit-toggle').classList.toggle('active', autoFit);
   try {
     const last = JSON.parse(localStorage.getItem('manga-reader-last'));
     if (last?.slug) { load(last.slug, last.chapter??1, last.page??1); return; }
