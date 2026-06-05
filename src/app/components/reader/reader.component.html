@@ -1,0 +1,26 @@
+<div class="fixed inset-0 flex items-center justify-center" [style.cursor]="cursor">
+  @if (reader.screen() === 'welcome') {
+    <div class="absolute text-center z-10 pointer-events-none">
+      <h1 class="text-lg font-light tracking-[0.6em] uppercase text-white/[0.12] mb-2">Manga Reader</h1>
+      <p class="text-[11px] tracking-[0.18em] text-white/[0.08]">Open the library or enter a manga name</p>
+    </div>
+  }
+  @if (reader.screen() === 'loading') {
+    <div class="absolute z-10">
+      <div class="spin w-6 h-6 rounded-full border-2 border-white/[0.08] border-t-white/50"></div>
+    </div>
+  }
+  @if (reader.screen() === 'error') {
+    <div class="absolute text-center z-10">
+      <p class="text-sm text-white/30">Could not load this page</p>
+      <p class="text-xs text-white/[0.14] mt-1.5">Check the manga name, chapter or page number</p>
+    </div>
+  }
+
+  <div class="absolute inset-0" [style.transform]="zoom.transform()" style="transform-origin: 0 0">
+    @if (reader.screen() === 'image') {
+      <img [src]="reader.imgSrc()" referrerpolicy="no-referrer" alt="" draggable="false"
+        class="w-screen h-screen object-contain relative z-[2] select-none pointer-events-none" />
+    }
+  </div>
+</div>

@@ -1,0 +1,86 @@
+<div class="rounded-2xl overflow-hidden border border-white/[0.07] bg-zinc-900/90"
+  style="backdrop-filter:blur(16px);box-shadow:0 8px 32px rgba(0,0,0,0.5)">
+
+  <!-- Header -->
+  <div class="flex items-center gap-1.5 px-3 py-2.5 border-b border-white/[0.06]">
+    <span class="text-[10px] tracking-[0.2em] uppercase text-white/30 flex items-center gap-1.5 mr-auto">
+      📖 Controls
+    </span>
+    <button (click)="toggleCtrl()" [class.collapsed]="ctrlCollapsed()"
+      class="chevron-btn flex items-center justify-center w-7 h-7 rounded-lg
+      text-white/30 hover:text-white/65 hover:bg-white/[0.06] transition-all" title="Collapse">
+      ⌄
+    </button>
+  </div>
+
+  <!-- Collapsible body -->
+  <div class="panel-body" [class.collapsed]="ctrlCollapsed()" style="max-height:60vh">
+
+    <!-- Manga -->
+    <div class="px-3 pt-2.5 pb-2 border-b border-white/[0.06]">
+      <label class="text-[9px] tracking-[0.15em] uppercase text-white/30 block mb-1.5">Manga</label>
+      <div class="flex items-center gap-1.5">
+        <input type="text" placeholder="one_piece" spellcheck="false" autocomplete="off" autocapitalize="off"
+          [value]="displayManga"
+          (input)="mangaValue.set($any($event.target).value)"
+          (keydown)="onMangaKey($event)"
+          class="flex-1 min-w-0 bg-white/[0.05] border border-white/[0.09] rounded-lg text-sm text-white/85
+          px-2.5 py-1.5 placeholder-white/[0.18]
+          focus:outline-none focus:border-white/25 focus:bg-white/[0.08]
+          hover:border-white/[0.14] transition-colors" />
+        <button (click)="search()" title="Search on MangaFreak"
+          class="flex items-center justify-center w-8 h-8 shrink-0 rounded-lg
+          border border-white/[0.08] bg-white/[0.04] text-white/40
+          hover:bg-white/[0.08] hover:text-white/75 transition-all">↗</button>
+      </div>
+    </div>
+
+    <!-- Chapter + Page -->
+    <div class="flex gap-2 px-3 pt-2.5 pb-2 border-b border-white/[0.06]">
+      <div class="flex-1 min-w-0">
+        <label class="text-[9px] tracking-[0.15em] uppercase text-white/30 block mb-1.5">Chapter</label>
+        <div class="flex items-stretch rounded-lg border border-white/[0.09] bg-white/[0.05] overflow-hidden
+          hover:border-white/[0.16] focus-within:border-white/25 focus-within:bg-white/[0.08] transition-colors">
+          <button (click)="chDec()" class="px-2 text-white/35 text-base hover:text-white/75 hover:bg-white/[0.06] transition-all border-r border-white/[0.08] shrink-0 select-none">−</button>
+          <input type="number" [value]="displayCh" min="1"
+            (input)="chValue.set(+$any($event.target).value)"
+            (keydown)="onChKey($event)"
+            class="flex-1 min-w-0 w-0 bg-transparent text-sm text-white/85 py-1.5 text-center focus:outline-none" />
+          <button (click)="chInc()" class="px-2 text-white/35 text-base hover:text-white/75 hover:bg-white/[0.06] transition-all border-l border-white/[0.08] shrink-0 select-none">+</button>
+        </div>
+      </div>
+      <div class="flex-1 min-w-0">
+        <label class="text-[9px] tracking-[0.15em] uppercase text-white/30 block mb-1.5">Page</label>
+        <div class="flex items-stretch rounded-lg border border-white/[0.09] bg-white/[0.05] overflow-hidden
+          hover:border-white/[0.16] focus-within:border-white/25 focus-within:bg-white/[0.08] transition-colors">
+          <button (click)="pgDec()" class="px-2 text-white/35 text-base hover:text-white/75 hover:bg-white/[0.06] transition-all border-r border-white/[0.08] shrink-0 select-none">−</button>
+          <input type="number" [value]="displayPg" min="1"
+            (input)="pgValue.set(+$any($event.target).value)"
+            (keydown)="onPgKey($event)"
+            class="flex-1 min-w-0 w-0 bg-transparent text-sm text-white/85 py-1.5 text-center focus:outline-none" />
+          <button (click)="pgInc()" class="px-2 text-white/35 text-base hover:text-white/75 hover:bg-white/[0.06] transition-all border-l border-white/[0.08] shrink-0 select-none">+</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Go + open chapter + keybindings -->
+    <div class="flex gap-1.5 px-3 pt-2.5 pb-2 border-b border-white/[0.06]">
+      <button (click)="go()" class="flex-1 py-1.5 rounded-lg text-sm font-medium
+        bg-violet-500/[0.18] border border-violet-500/[0.38] text-white/90
+        hover:bg-violet-500/30 hover:border-violet-500/60 transition-all">Go</button>
+      <button (click)="openSite()" title="Open chapter on MangaFreak"
+        class="flex items-center justify-center w-8 h-8 shrink-0 rounded-lg
+        border border-white/[0.08] bg-white/[0.04] text-white/40
+        hover:bg-white/[0.08] hover:text-white/75 transition-all">⧉</button>
+      <button (click)="openSettings.emit()" title="Key bindings"
+        class="icon-btn flex items-center justify-center w-8 h-8 shrink-0 rounded-lg
+        border border-white/[0.08] bg-white/[0.04] text-white/40
+        hover:bg-white/[0.08] hover:text-white/75 transition-all">⌨</button>
+      <button (click)="zoom.toggleAutoFit()" title="Auto-fit zoom on page turn"
+        class="icon-btn flex items-center justify-center w-8 h-8 shrink-0 rounded-lg
+        border border-white/[0.08] bg-white/[0.04] text-white/40
+        hover:bg-white/[0.08] hover:text-white/75 transition-all"
+        [class.active]="zoom.autoFit()">⤢</button>
+    </div>
+  </div>
+</div>

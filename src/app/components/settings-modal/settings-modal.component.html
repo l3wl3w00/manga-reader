@@ -1,0 +1,120 @@
+@if (isOpen()) {
+  <!-- Backdrop -->
+  <div class="backdrop open fixed inset-0 bg-black/55 z-[109]" (click)="close()"></div>
+
+  <!-- Modal -->
+  <div class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
+    w-[420px] max-h-[85vh] bg-zinc-900/95 border border-white/[0.08]
+    rounded-2xl z-[110] flex flex-col overflow-hidden"
+    style="backdrop-filter:blur(16px);box-shadow:0 24px 80px rgba(0,0,0,0.7)"
+    (keydown)="onKeyDown($event)" tabindex="-1">
+
+    <!-- Tab header -->
+    <div class="flex items-center gap-1 px-4 h-12 border-b border-white/[0.06] shrink-0">
+      <button (click)="activeTab.set('kb')"   [class.active]="activeTab()==='kb'"   class="settings-tab">Keybindings</button>
+      <button (click)="activeTab.set('zoom')" [class.active]="activeTab()==='zoom'" class="settings-tab">Zoom</button>
+      <div class="flex-1"></div>
+      <button (click)="close()"
+        class="flex items-center justify-center w-7 h-7 rounded-md
+        text-white/30 hover:bg-white/[0.07] hover:text-white/65 transition-all">✕</button>
+    </div>
+
+    <!-- Keybindings panel -->
+    @if (activeTab() === 'kb') {
+      <div class="flex flex-col flex-1 min-h-0 overflow-hidden">
+        <div class="py-2 overflow-y-auto scrollbar flex-1">
+
+          <!-- Preset bar -->
+          <div class="flex gap-1.5 px-5 py-3 border-b border-white/[0.06]">
+            @for (p of PRESETS; track p.id) {
+              @if (renamingPreset() === p.id) {
+                <div class="flex-1 flex items-center rounded-lg border border-violet-500/[0.38] bg-violet-500/[0.08] px-2.5">
+                  <input class="flex-1 min-w-0 bg-transparent text-xs text-white/90 focus:outline-none py-1.5"
+                    [value]="renameValue()"
+                    (input)="renameValue.set($any($event.target).value)"
+                    (keydown.enter)="commitRename(p.id)"
+                    (keydown.escape)="cancelRename()"
+                    (blur)="commitRename(p.id)"
+                    maxlength="24" />
+                </div>
+              } @else {
+                <div class="group/p relative flex-1">
+                  <button (click)="kb.applyPreset(p.id); kb.recordingAction.set(null)"
+                    class="preset-switch w-full py-1.5 rounded-lg text-xs border transition-all"
+                    [class.bg-violet-500/[0.18]]="kb.activePreset()===p.id"
+                    [class.border-violet-500/[0.38]]="kb.activePreset()===p.id"
+                    [class.text-white/90]="kb.activePreset()===p.id"
+                    [class.bg-white/[0.04]]="kb.activePreset()!==p.id"
+                    [class.border-white/[0.08]]="kb.activePreset()!==p.id"
+                    [class.text-white/45]="kb.activePreset()!==p.id">
+                    {{presetLabel(p.id)}}
+                  </button>
+                  <button (click)="startRename(p.id)"
+                    class="absolute inset-y-0 right-1.5 my-auto w-4 h-4 rounded flex items-center justify-center
+                    text-[11px] leading-none text-white/30 hover:text-white/70 transition-all
+                    opacity-0 group-hover/p:opacity-100" title="Rename">✎</button>
+                </div>
+              }
+            }
+          </div>
+
+          <!-- Actions -->
+          @for (group of ACTION_GROUPS; track group.label) {
+            <div class="px-5 pt-3 pb-1 text-[9px] tracking-[0.15em] uppercase text-white/25">{{group.label}}</div>
+            @for (action of group.actions; track action) {
+              <div class="flex items-center justify-between px-5 py-1.5 gap-4">
+                <span class="text-sm text-white/55">{{ACTION_LABELS[action]}}</span>
+                <button (click)="startRecording(action)"
+                  class="kb-key text-xs bg-white/[0.05] border border-white/[0.1] rounded-lg
+                  px-3 py-1.5 min-w-[96px] text-center text-white/75
+                  hover:bg-white/[0.09] hover:border-white/20 transition-all"
+                  [class.recording]="kb.recordingAction()===action">
+                  {{kb.recordingAction()===action ? 'Press a key…' : formatKey(bindings()[action])}}
+                </button>
+              </div>
+            }
+          }
+        </div>
+
+        <div class="flex justify-end px-5 py-3.5 border-t border-white/[0.06] shrink-0">
+          <button (click)="resetBindings()"
+            class="flex items-center gap-1.5 text-xs text-white/30 border border-white/[0.1]
+            rounded-lg px-4 py-1.5 hover:text-white/60 hover:border-white/20 transition-all">
+            ↺ Reset to defaults
+          </button>
+        </div>
+      </div>
+    }
+
+    <!-- Zoom settings panel -->
+    @if (activeTab() === 'zoom') {
+      <div class="p-5 flex flex-col gap-4">
+        <p class="text-[10px] text-white/25 leading-relaxed">Applied on every page turn when auto-fit zoom is enabled.</p>
+        <div class="flex gap-4">
+          <div class="flex-1">
+            <label class="text-[9px] tracking-[0.15em] uppercase text-white/30 block mb-1.5">Height %</label>
+            <input type="number" min="10" max="100"
+              [value]="fitHeightValue()"
+              (input)="fitHeightValue.set(+$any($event.target).value)"
+              (change)="onFitChange()"
+              class="w-full bg-white/[0.05] border border-white/[0.09] rounded-lg text-sm text-white/85
+              px-2.5 py-2 text-center focus:outline-none focus:border-white/25 focus:bg-white/[0.08]
+              hover:border-white/[0.14] transition-colors" />
+            <p class="text-[9px] text-white/20 mt-1.5">% of image height visible</p>
+          </div>
+          <div class="flex-1">
+            <label class="text-[9px] tracking-[0.15em] uppercase text-white/30 block mb-1.5">Max Width %</label>
+            <input type="number" min="10" max="200"
+              [value]="fitWidthValue()"
+              (input)="fitWidthValue.set(+$any($event.target).value)"
+              (change)="onFitChange()"
+              class="w-full bg-white/[0.05] border border-white/[0.09] rounded-lg text-sm text-white/85
+              px-2.5 py-2 text-center focus:outline-none focus:border-white/25 focus:bg-white/[0.08]
+              hover:border-white/[0.14] transition-colors" />
+            <p class="text-[9px] text-white/20 mt-1.5">Max % of viewport width</p>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+}

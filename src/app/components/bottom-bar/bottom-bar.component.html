@@ -1,0 +1,26 @@
+<div class="flex items-center gap-1.5 px-3 py-2 rounded-2xl border border-white/[0.07] bg-zinc-900/90"
+  style="backdrop-filter:blur(16px);box-shadow:0 8px 32px rgba(0,0,0,0.5)">
+  <button (click)="reader.prevChapter()"
+    class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-white/55
+    border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.07] hover:text-white/80 transition-all">
+    «  Chapter
+  </button>
+  <button (click)="reader.prevPageFull()"
+    class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-white/55
+    border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.07] hover:text-white/80 transition-all">
+    ‹ Page
+  </button>
+  <div class="px-3 text-xs text-white/40 tracking-wide tabular-nums min-w-[60px] text-center">
+    {{reader.info()}}
+  </div>
+  <button (click)="reader.nextPageFull()"
+    class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-white/55
+    border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.07] hover:text-white/80 transition-all">
+    Page ›
+  </button>
+  <button (click)="reader.nextChapter()"
+    class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-white/55
+    border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.07] hover:text-white/80 transition-all">
+    Chapter »
+  </button>
+</div>

@@ -4,35 +4,47 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project overview
 
-A single-file static HTML manga reader (`index.html`). No build system, no dependencies to install, no package.json. Open `index.html` directly in a browser to run it.
+An Angular 22 manga reader app. Build with `ng build` and open `dist/manga-reader/browser/index.html` directly in a browser (no dev server needed — `baseHref` is set to `./`).
 
 ## Development
 
-Just open `index.html` in a browser — there's no build step, no dev server, no tests. All logic, markup, and styles are in one file.
+```bash
+ng build              # production build → dist/manga-reader/browser/
+ng build --watch --configuration development  # watch mode
+ng serve              # dev server on localhost
+```
 
-External dependencies loaded via CDN:
-- Tailwind CSS (utility classes)
-- Lucide icons (`lucide.createIcons()` must be called after any HTML that adds `data-lucide` attributes)
+External image source: `https://images.mangafreak.me/mangas/{manga}/{manga}_{ch}/{manga}_{ch}_{pg}.jpg` with `referrerpolicy="no-referrer"`.
 
 ## Architecture
 
-Everything lives inside a single IIFE in `index.html`. Key state and concepts:
+**Services** (`src/app/services/`):
+- `ReaderService` — core state signals (`manga`, `chapter`, `page`, `totalPages`, `busy`, `screen`, `imgSrc`), `load()`, navigation (`nextPage`, `prevPage`, `nextPageFull`, `prevPageFull`, `nextChapter`, `prevChapter`). Probes image URLs with `Image` objects; `onerror` = 404.
+- `LibraryService` — localStorage library (`manga-reader-library`), per-chapter page positions, favourites. `entries` signal auto-sorts by favourite then recency.
+- `ZoomService` — zoom/pan signals, `setZoom()`, `autoFitZoom()`, `clampPan()`, drag helpers. Zoom toward mouse position.
+- `KeybindingsService` — keybinding presets, recording mode, `matches(e, action)`.
 
-**Core state object** (`s`): `{ manga, chapter, page, totalPages, busy }` — `busy` is a mutex to prevent concurrent loads.
+**Components** (`src/app/components/`):
+- `ReaderComponent` — image display + zoom-root div with CSS transform. Owns mouse events (drag, wheel).
+- `ControlPanelComponent` — left sidebar: manga/chapter/page inputs, Go button, search/site links.
+- `LibraryPanelComponent` — library list with covers, progress bars, favourite/remove actions.
+- `BottomBarComponent` — bottom nav: prev/next page and chapter buttons with page info.
+- `SettingsModalComponent` — keybinding editor with preset switching, zoom settings tab.
 
-**Image source**: Pages are fetched from `https://images.mangafreak.me/mangas/{manga}/{manga}_{ch}/{manga}_{ch}_{pg}.jpg` with `referrerpolicy="no-referrer"`. The app probes this URL with an `Image` object; `onerror` means the page doesn't exist.
+**AppComponent** (`src/app/app.ts`):
+- Owns `panelsLocked` / `peeking` / `showPanels` signals for panel visibility.
+- Handles all `@HostListener` keyboard events and dispatches to services.
+- Bootstraps via `viewChild` to `SettingsModalComponent`.
 
-**`load(manga, ch, pg, opts)`**: Core function. Probes whether a page image exists before showing it. On success, calls `probeNext()` to determine `totalPages` by probing `pg+1` and waiting for its error.
-
-**Two navigation modes**:
-- Click zones (left/right 28% of screen): page-only, never auto-advances chapter
-- Buttons and keybindings: advance chapter at chapter boundaries
+**Two navigation modes** (preserved from original):
+- Click zones (left/right 28%): page-only, never auto-advances chapter.
+- Buttons and keybindings: advance chapter at chapter boundaries.
 
 **Persistence** (all `localStorage`):
-- `manga-reader-library`: full library with per-chapter page positions, favourites, chapter lengths
-- `manga-reader-last`: last opened manga/chapter/page for auto-resume on load
-- `manga-reader-bindings`: customisable key bindings
+- `manga-reader-library`: full library with per-chapter page positions, favourites, chapter lengths.
+- `manga-reader-last`: last opened manga/chapter/page for auto-resume on load.
+- `manga-reader-bindings`: customisable key bindings.
+- `manga-reader-preset`, `manga-reader-preset-names`: active preset + renamed labels.
+- `manga-reader-autozoom`, `manga-reader-fitzoom`: auto-fit zoom toggle + settings.
 
-**Auto-hide**: UI panels (`#topbar`, `#bottombar`) and cursor hide after 2.8s of inactivity while a manga is open. `freezeControls()` / `showControls()` manage this. `kbOpen` flag prevents hiding while the keybindings modal is open.
-
-**Zoom/pan**: CSS `transform` on `#zoom-root`. `setZoom()` zooms toward the current mouse position. `clampPan()` keeps the image within viewport bounds.
+**Keybinding presets**: Default, WASD, Eating — stored in `KeybindingsService.PRESETS`.

@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin { animation: spin 0.75s linear infinite; }
+
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+.scrollbar { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.08) transparent; }
+.scrollbar::-webkit-scrollbar { width: 3px; }
+.scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+body.hide-cursor * { cursor: none !important; }
+
+.topbar-panel    { transition: opacity 0.3s ease, transform 0.3s ease; }
+.topbar-panel.hidden-panel    { opacity: 0; transform: translateX(-10px); pointer-events: none; }
+.bottombar-panel { transition: opacity 0.3s ease, transform 0.3s ease; }
+.bottombar-panel.hidden-panel { opacity: 0; transform: translateY(8px); pointer-events: none; }
+
+.panel-body { overflow: hidden; transition: max-height 0.3s ease, opacity 0.3s ease; }
+.panel-body.collapsed { max-height: 0 !important; opacity: 0; }
+
+.backdrop { opacity: 0; pointer-events: none; transition: opacity 0.28s ease; }
+.backdrop.open { opacity: 1; pointer-events: all; }
+
+.zone:hover .zone-arrow { color: rgba(255,255,255,0.2); }
+
+.icon-btn.active { background: rgba(255,255,255,0.1) !important; border-color: rgba(255,255,255,0.22) !important; color: rgba(255,255,255,0.9) !important; }
+.kb-key.recording { background: rgba(139,92,246,0.18) !important; border-color: rgba(139,92,246,0.5) !important; color: rgba(255,255,255,0.4) !important; }
+
+.chevron-btn { transition: transform 0.3s ease; }
+.chevron-btn.collapsed { transform: rotate(-90deg); }
+
+.settings-tab { padding: 0.2rem 0.65rem; border-radius: 0.45rem; font-size: 0.7rem; letter-spacing: 0.05em; border: 1px solid transparent; transition: all 0.15s; color: rgba(255,255,255,0.3); }
+.settings-tab:hover { color: rgba(255,255,255,0.6); background: rgba(255,255,255,0.05); }
+.settings-tab.active { color: rgba(255,255,255,0.85); background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.12); }

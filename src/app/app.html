@@ -1,0 +1,35 @@
+<app-reader />
+
+<!-- Click zones -->
+<div class="fixed top-0 bottom-0 left-[28%] right-[28%] z-10" (click)="onZoneCenterClick()"></div>
+<div class="zone fixed top-0 bottom-0 left-0 w-[28%] z-10 flex items-center pl-5" (click)="onZoneLeft()">
+  <span class="zone-arrow text-5xl font-thin text-transparent transition-colors duration-200 pointer-events-none"
+    style="text-shadow:0 0 24px rgba(0,0,0,0.9)">‹</span>
+</div>
+<div class="zone fixed top-0 bottom-0 right-0 w-[28%] z-10 flex items-center justify-end pr-5" (click)="onZoneRight()">
+  <span class="zone-arrow text-5xl font-thin text-transparent transition-colors duration-200 pointer-events-none"
+    style="text-shadow:0 0 24px rgba(0,0,0,0.9)">›</span>
+</div>
+
+<!-- Left panel group -->
+<div id="topbar" class="fixed z-50 flex flex-col gap-2 topbar-panel"
+  [class.hidden-panel]="!showPanels()"
+  style="top:2%;left:1.5%;width:18%;min-width:230px;height:96%">
+  <app-control-panel (openSettings)="openSettings()" />
+  <app-library-panel />
+</div>
+
+<!-- Bottom bar -->
+<div id="bottombar" class="fixed z-50 flex items-center justify-center bottombar-panel"
+  [class.hidden-panel]="!showPanels()"
+  style="bottom:2%;left:0;right:0">
+  <app-bottom-bar />
+</div>
+
+<!-- Progress bar -->
+<div class="fixed bottom-0 left-0 h-0.5 bg-violet-500 z-[200] pointer-events-none transition-all duration-300"
+  [style.width]="progress() + '%'"
+  [style.opacity]="showProgress() ? 1 : 0"></div>
+
+<!-- Settings modal -->
+<app-settings-modal />
