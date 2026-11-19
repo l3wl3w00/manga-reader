@@ -12,7 +12,10 @@ An Angular 22 manga reader app. Build with `ng build` and open `dist/manga-reade
 ng build              # production build → dist/manga-reader/browser/
 ng build --watch --configuration development  # watch mode
 ng serve              # dev server on localhost
+npm run build:single  # one self-contained file → dist/manga-reader.html (scripts/inline.mjs)
 ```
+
+Install with `npm ci --legacy-peer-deps`: `lucide-angular` 1.0.0 (the latest) declares peers only up to Angular 21.
 
 External image source: `https://images.mangafreak.me/mangas/{manga}/{manga}_{ch}/{manga}_{ch}_{pg}.jpg` with `referrerpolicy="no-referrer"`.
 
