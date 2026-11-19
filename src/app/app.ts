@@ -1,110 +1,91 @@
-import { Component, inject, signal, computed, viewChild, HostListener, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
+import { LucideIconConfig } from 'lucide-angular';
 import { ReaderService } from './services/reader.service';
 import { LibraryService } from './services/library.service';
 import { ZoomService, PAN_STEP, ZOOM_STEP } from './services/zoom.service';
 import { KeybindingsService } from './services/keybindings.service';
-import { ReaderComponent } from './components/reader/reader.component';
-import { ControlPanelComponent } from './components/control-panel/control-panel.component';
-import { LibraryPanelComponent } from './components/library-panel/library-panel.component';
-import { BottomBarComponent } from './components/bottom-bar/bottom-bar.component';
-import { SettingsModalComponent } from './components/settings-modal/settings-modal.component';
+import { LayoutService } from './services/layout.service';
+import { MotionService } from './services/motion.service';
+import { UiService } from './services/ui.service';
+import { DesktopLayoutComponent } from './layouts/desktop-layout/desktop-layout.component';
+import { MobileLayoutComponent } from './layouts/mobile-layout/mobile-layout.component';
 
+const isTyping = (e: Event) => {
+  const t = e.target as HTMLElement | null;
+  return !!t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
+};
+
+/** Root: picks the desktop or mobile layout, resumes the last read page, and owns the keyboard. */
 @Component({
   selector: 'app-root',
-  imports: [
-    ReaderComponent,
-    ControlPanelComponent,
-    LibraryPanelComponent,
-    BottomBarComponent,
-    SettingsModalComponent,
-  ],
-  templateUrl: './app.html',
-  styleUrl: './app.css',
+  imports: [DesktopLayoutComponent, MobileLayoutComponent],
+  host: {
+    '(document:keydown)': 'onKeyDown($event)',
+    '(document:keyup)': 'onKeyUp($event)',
+  },
+  template: `@if (layout.mobile()) { <app-mobile-layout /> } @else { <app-desktop-layout /> }`,
 })
 export class App implements OnInit {
-  reader = inject(ReaderService);
-  lib    = inject(LibraryService);
-  zoom   = inject(ZoomService);
-  kb     = inject(KeybindingsService);
+  private reader = inject(ReaderService);
+  private lib    = inject(LibraryService);
+  private zoom   = inject(ZoomService);
+  private kb     = inject(KeybindingsService);
+  private ui     = inject(UiService);
+  protected layout = inject(LayoutService);
+  /** Created at start-up so data-motion is on <html> before anything animates. */
+  private motion = inject(MotionService);
 
-  settingsModal = viewChild.required(SettingsModalComponent);
-
-  panelsLocked = signal(true);
-  peeking      = signal(false);
-
-  showPanels = computed(() => this.panelsLocked() || this.peeking() || this.settingsModal().isOpen());
-
-  progress = computed(() => {
-    const tp = this.reader.totalPages();
-    return tp ? (this.reader.page() / tp) * 100 : 0;
-  });
-
-  showProgress = computed(() => !!this.reader.totalPages() && !!this.reader.manga());
+  constructor() {
+    const icons = inject(LucideIconConfig);
+    icons.size = 18;
+    icons.strokeWidth = 2;
+  }
 
   ngOnInit() {
     const last = this.lib.getLast();
-    if (last?.slug) {
-      this.reader.load(last.slug, last.chapter ?? 1, last.page ?? 1);
-    }
+    if (last?.slug) this.reader.load(last.slug, last.chapter ?? 1, last.page ?? 1);
   }
 
-  openSettings() { this.settingsModal().open(); }
-
-  togglePanels() { this.panelsLocked.update(v => !v); }
-
-  onZoneCenterClick() { this.togglePanels(); }
-
-  onZoneLeft()  { this.reader.prevPage(); }
-  onZoneRight() { this.reader.nextPage(); }
-
-  @HostListener('document:keydown', ['$event'])
-  onKeyDown(e: KeyboardEvent) {
-    const modal = this.settingsModal();
-    if (modal.isOpen()) {
-      modal.onKeyDown(e);
+  protected onKeyDown(e: KeyboardEvent) {
+    if (this.ui.settingsOpen()) {
+      if (this.kb.recordKey(e)) return;
+      if (e.key === 'Escape' && !isTyping(e)) this.ui.closeSettings();
       return;
     }
-
-    const recording = this.kb.recordingAction();
-    if (recording !== null) return;
-
-    if ((e.target as HTMLElement)?.tagName === 'INPUT') {
+    if (isTyping(e)) {
       if (e.key === 'Escape') (e.target as HTMLElement).blur();
       return;
     }
-
-    if (e.key === 'Escape') { modal.close(); return; }
-
-    if (this.kb.matches(e, 'fullscreen')) {
-      if (!document.fullscreenElement) document.documentElement.requestFullscreen();
-      else document.exitFullscreen();
+    if (e.key === 'Escape') {
+      if (this.ui.sheet()) this.ui.closeSheet();
+      else if (this.reader.screen() === 'end') this.reader.backFromEnd();
       return;
     }
-    if (this.kb.matches(e, 'jumpVert')) {
-      e.preventDefault();
-      if (this.reader.manga()) {
-        const minY = window.innerHeight * (1 - this.zoom.zoom());
-        const py = this.zoom.panY();
-        this.zoom.panY.set(py > minY / 2 ? minY : 0);
-        this.zoom.clampPan();
-      }
-      return;
+
+    const action = this.kb.actionFor(e);
+    if (!action) return;
+    if (action !== 'fullscreen') e.preventDefault();
+    switch (action) {
+      case 'fullscreen':
+        if (!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+        else document.exitFullscreen();
+        break;
+      case 'jumpVert':     if (this.reader.manga()) this.zoom.jumpVertical(); break;
+      case 'togglePanels': this.ui.togglePanels(); break;
+      case 'peekPanels':   this.ui.peeking.set(true); break;
+      case 'nextPage':     this.reader.nextPageFull(); break;
+      case 'prevPage':     this.reader.prevPageFull(); break;
+      case 'zoomIn':       this.zoom.setZoom(this.zoom.zoom() + ZOOM_STEP); break;
+      case 'zoomOut':      this.zoom.setZoom(this.zoom.zoom() - ZOOM_STEP); break;
+      case 'panRight':     this.zoom.panBy(-PAN_STEP, 0); break;
+      case 'panLeft':      this.zoom.panBy(PAN_STEP, 0); break;
+      case 'panDown':      this.zoom.panBy(0, -PAN_STEP); break;
+      case 'panUp':        this.zoom.panBy(0, PAN_STEP); break;
     }
-    if (this.kb.matches(e, 'togglePanels')) { e.preventDefault(); this.togglePanels(); return; }
-    if (this.kb.matches(e, 'peekPanels'))  { e.preventDefault(); if (!this.peeking()) this.peeking.set(true); return; }
-    if (this.kb.matches(e, 'nextPage'))    { e.preventDefault(); this.reader.nextPageFull(); return; }
-    if (this.kb.matches(e, 'prevPage'))    { e.preventDefault(); this.reader.prevPageFull(); return; }
-    if (this.kb.matches(e, 'zoomIn'))      { e.preventDefault(); this.zoom.setZoom(this.zoom.zoom() + ZOOM_STEP); return; }
-    if (this.kb.matches(e, 'zoomOut'))     { e.preventDefault(); this.zoom.setZoom(this.zoom.zoom() - ZOOM_STEP); return; }
-    if (this.kb.matches(e, 'panRight'))    { e.preventDefault(); this.zoom.panX.update(v => v - PAN_STEP); this.zoom.clampPan(); return; }
-    if (this.kb.matches(e, 'panLeft'))     { e.preventDefault(); this.zoom.panX.update(v => v + PAN_STEP); this.zoom.clampPan(); return; }
-    if (this.kb.matches(e, 'panDown'))     { e.preventDefault(); this.zoom.panY.update(v => v - PAN_STEP); this.zoom.clampPan(); return; }
-    if (this.kb.matches(e, 'panUp'))       { e.preventDefault(); this.zoom.panY.update(v => v + PAN_STEP); this.zoom.clampPan(); return; }
   }
 
-  @HostListener('document:keyup', ['$event'])
-  onKeyUp(e: KeyboardEvent) {
-    if ((e.target as HTMLElement)?.tagName === 'INPUT') return;
-    if (this.kb.matches(e, 'peekPanels')) this.peeking.set(false);
+  protected onKeyUp(e: KeyboardEvent) {
+    if (isTyping(e)) return;
+    if (this.kb.matches(e, 'peekPanels')) this.ui.peeking.set(false);
   }
 }

@@ -1,0 +1,90 @@
+<div class="flex flex-col gap-1.5">
+  <label class="lbl" [for]="'manga-' + variant()">Manga</label>
+  <div class="flex gap-2">
+    <input class="inp" [class.inp-lg]="large()" [class.inp-err]="invalid()" [id]="'manga-' + variant()" type="text"
+      [placeholder]="large() ? 'paper moon courier' : 'paper_moon_courier'" spellcheck="false" autocomplete="off" autocapitalize="off"
+      [value]="mangaDraft()" (input)="mangaDraft.set($any($event.target).value)" (keydown.enter)="onEnter('manga')"
+      [attr.aria-invalid]="invalid()" [attr.aria-describedby]="'manga-help-' + variant()" />
+    <button type="button" class="btn btn-sq" [class.btn-lg]="large()" [class.btn-ghost]="!invalid() && !large()"
+      (click)="search()" aria-label="Search on MangaFreak">
+      <lucide-icon [img]="icons.search" [size]="18" />
+    </button>
+  </div>
+  @if (invalid()) {
+    <span [id]="'manga-help-' + variant()" class="flex items-center gap-1.5 text-xs text-gold" animate.enter="a-rise-in">
+      <lucide-icon [img]="icons.alert" [size]="14" />No page at this name, chapter and page.
+    </span>
+  } @else if (variant() === 'panel' && !loaded()) {
+    <span [id]="'manga-help-' + variant()" class="text-xs text-mute">Spaces become underscores when you press Go.</span>
+  }
+</div>
+
+<div class="flex gap-3">
+  <div class="flex min-w-0 flex-1 flex-col gap-1.5">
+    <label class="lbl" [for]="'ch-' + variant()">Chapter</label>
+    <div class="stp" [class.stp-lg]="large()">
+      <button type="button" (click)="step('ch', -1)" [attr.aria-label]="live() ? 'Previous chapter' : 'Chapter down'">
+        <lucide-icon [img]="icons.minus" [size]="18" />
+      </button>
+      <input [id]="'ch-' + variant()" type="text" inputmode="numeric" [value]="chDraft()"
+        (input)="setNumber('ch', $any($event.target).value)" (keydown.enter)="onEnter('ch')" />
+      <button type="button" (click)="step('ch', 1)" [attr.aria-label]="live() ? 'Next chapter' : 'Chapter up'">
+        <lucide-icon [img]="icons.plus" [size]="18" />
+      </button>
+    </div>
+  </div>
+  <div class="flex min-w-0 flex-1 flex-col gap-1.5">
+    <label class="lbl" [for]="'pg-' + variant()">
+      Page @if (variant() === 'sheet' && reader.totalPages()) { · of {{ reader.totalPages() }} }
+    </label>
+    <div class="stp" [class.stp-lg]="large()">
+      <button type="button" (click)="step('pg', -1)" [attr.aria-label]="live() ? 'Previous page' : 'Page down'">
+        <lucide-icon [img]="icons.minus" [size]="18" />
+      </button>
+      <input [id]="'pg-' + variant()" type="text" inputmode="numeric" [value]="pgDraft()"
+        (input)="setNumber('pg', $any($event.target).value)" (keydown.enter)="onEnter('pg')" />
+      <button type="button" (click)="step('pg', 1)" [attr.aria-label]="live() ? 'Next page' : 'Page up'">
+        <lucide-icon [img]="icons.plus" [size]="18" />
+      </button>
+    </div>
+  </div>
+</div>
+
+@if (variant() === 'panel') {
+  <div class="flex gap-2 pb-1">
+    @if (loadingLabel(); as label) {
+      <button type="button" class="btn flex-1" aria-disabled="true" aria-live="polite">{{ label }}</button>
+    } @else {
+      <button type="button" class="btn btn-primary flex-1" (click)="go()">Go</button>
+    }
+    <button type="button" class="btn btn-sq btn-ghost" [attr.aria-disabled]="!loaded()" (click)="openSite()"
+      [attr.aria-label]="loaded() ? 'Open chapter on MangaFreak' : 'Open chapter on MangaFreak (nothing loaded)'">
+      <lucide-icon [img]="icons.externalLink" [size]="18" />
+    </button>
+    <button type="button" class="btn btn-sq" [class.btn-on]="zoom.autoFit()" [class.btn-ghost]="!zoom.autoFit()"
+      (click)="zoom.toggleAutoFit()" [attr.aria-pressed]="zoom.autoFit()" aria-label="Auto-fit zoom on page turn" title="Auto-fit zoom on page turn">
+      <lucide-icon [img]="icons.scan" [size]="18" />
+    </button>
+    <button type="button" class="btn btn-sq btn-ghost" (click)="openSettings()" aria-label="Settings" title="Settings">
+      <lucide-icon [img]="icons.keyboard" [size]="18" />
+    </button>
+  </div>
+} @else {
+  <button type="button" class="btn btn-primary btn-lg mr-1 mb-1" (click)="go()">{{ goLabel() }}</button>
+}
+
+@if (variant() === 'sheet') {
+  <div class="flex flex-col border-t border-line">
+    @if (loaded()) {
+      <button type="button" class="flex min-h-13 items-center gap-3 border-b border-line text-left font-bold" (click)="openSite()">
+        <lucide-icon [img]="icons.externalLink" [size]="18" />Open chapter {{ reader.chapter() }} on MangaFreak
+      </button>
+    }
+    <div class="flex min-h-14 items-center gap-3">
+      <lucide-icon [img]="icons.scan" [size]="18" />
+      <span class="flex-1 font-bold" id="autofit-label">Auto-fit zoom on page turn</span>
+      <button type="button" class="tgl" role="switch" [attr.aria-checked]="zoom.autoFit()" aria-labelledby="autofit-label"
+        (click)="zoom.toggleAutoFit()"></button>
+    </div>
+  </div>
+}

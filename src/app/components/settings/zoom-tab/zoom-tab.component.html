@@ -1,0 +1,89 @@
+@let mobile = layout.mobile();
+@let fs = zoom.fitSettings();
+@let p = preview();
+
+<ng-template #stepper let-which="which" let-value="value" let-label="label">
+  <div class="stp" [class]="mobile ? 'stp-lg' : 'w-[150px]'">
+    <button type="button" (click)="step(which, -1)" [attr.aria-label]="'Less ' + label"><lucide-icon [img]="icons.minus" [size]="18" /></button>
+    <input [id]="'fit-' + which" type="text" inputmode="numeric" [value]="value" (change)="set(which, +$any($event.target).value)" (keydown.enter)="set(which, +$any($event.target).value)" />
+    <button type="button" (click)="step(which, 1)" [attr.aria-label]="'More ' + label"><lucide-icon [img]="icons.plus" [size]="18" /></button>
+  </div>
+</ng-template>
+
+<ng-template #previewFrame>
+  <div class="relative shrink-0 overflow-hidden border-2 border-paper bg-ink" [style.width.px]="p.frameW" [style.height.px]="p.frameH" aria-hidden="true">
+    <app-page-art kind="print" class="absolute top-0 transition-all duration-300 ease-snap"
+      [style.left.px]="p.pageLeft" [style.width.px]="p.pageW" [style.height.px]="p.pageH" />
+    @if (!mobile) {
+      <span class="absolute inset-y-0 left-1.5 w-0.5 bg-shu"></span>
+      <span class="absolute left-3.5 top-[44%] bg-ink px-1 py-0.5 font-mono text-[11px] font-bold text-shu">{{ fs.heightPct }}%</span>
+      <span class="absolute bottom-1.5 h-0.5 bg-gold transition-all duration-300 ease-snap"
+        [style.left.px]="Math.max(0, p.pageLeft)" [style.width.px]="Math.min(p.pageW, p.frameW)"></span>
+      <span class="absolute bottom-3 left-1/2 -translate-x-1/2 bg-ink px-1 py-0.5 font-mono text-[11px] font-bold text-gold">{{ p.widePct }}% wide</span>
+    }
+  </div>
+</ng-template>
+
+<div [class]="mobile ? 'flex flex-col gap-[22px] p-5' : 'grid grid-cols-[minmax(0,1fr)_400px] gap-10 px-8 pt-7 pb-8'">
+  <div class="flex flex-col gap-6" [class.contents]="mobile">
+    <div class="flex items-center gap-4 border-b border-line pb-5">
+      <div class="flex-1">
+        <div class="dsp" [class]="mobile ? 'text-[17px]' : 'text-lg'" id="autofit-title">Auto-fit zoom</div>
+        <div class="mt-1.5 text-[13px] text-dim">Re-frames the page on every page turn.@if (!mobile) { Off keeps whatever zoom you set by hand.}</div>
+      </div>
+      <button type="button" class="tgl" role="switch" [attr.aria-checked]="zoom.autoFit()" aria-labelledby="autofit-title" (click)="zoom.toggleAutoFit()"></button>
+    </div>
+
+    @if (mobile) {
+      <div class="flex gap-3">
+        <div class="flex min-w-0 flex-1 flex-col gap-1.5">
+          <label class="lbl" for="fit-h">Height %</label>
+          <ng-container *ngTemplateOutlet="stepper; context: { which: 'h', value: fs.heightPct, label: 'height' }" />
+          <span class="text-xs text-mute">Share of the page's height on screen.</span>
+        </div>
+        <div class="flex min-w-0 flex-1 flex-col gap-1.5">
+          <label class="lbl" for="fit-w">Max width %</label>
+          <ng-container *ngTemplateOutlet="stepper; context: { which: 'w', value: fs.maxWidthPct, label: 'width' }" />
+          <span class="text-xs text-mute">Over 100 lets the page run past the edges.</span>
+        </div>
+      </div>
+    } @else {
+      @for (f of fields(); track f.which) {
+        <div class="flex flex-col gap-1.5">
+          <label class="lbl" [for]="'fit-' + f.which">{{ f.title }}</label>
+          <div class="flex items-center gap-4">
+            <ng-container *ngTemplateOutlet="stepper; context: f" />
+            <input type="range" class="rng flex-1" [min]="f.range.min" [max]="f.range.max" [value]="f.value"
+              [style.--fill]="fill(f.value, f.range)" (input)="set(f.which, +$any($event.target).value)" [attr.aria-label]="f.title" />
+          </div>
+          <span class="text-xs text-mute">{{ f.help }}</span>
+        </div>
+      }
+      <div class="flex flex-wrap items-center gap-2.5 border-t border-line pt-[18px] text-[13px] text-dim">
+        <span class="lbl mr-1">By hand</span><span>Wheel, or</span>
+        <span class="key key-sm">{{ kb.keyFor('zoomIn') }}</span><span class="key key-sm">{{ kb.keyFor('zoomOut') }}</span><span>100–400%</span>
+      </div>
+    }
+  </div>
+
+  @if (mobile) {
+    <div class="flex items-end gap-5 pt-1">
+      <ng-container *ngTemplateOutlet="previewFrame" />
+      <div class="flex flex-col gap-2 pb-1">
+        <span class="lbl">Preview · this screen</span>
+        <span class="text-[13px] text-dim">Pages open at</span>
+        <span class="dsp text-[40px] text-shu">{{ p.percent }}%</span>
+        <span class="text-xs leading-normal text-mute">{{ p.byWidth ? 'Capped by max width. ' : '' }}Starts at the top of the page; drag to read down.</span>
+      </div>
+    </div>
+  } @else {
+    <div class="flex flex-col gap-2.5">
+      <span class="lbl">Preview · this window</span>
+      <ng-container *ngTemplateOutlet="previewFrame" />
+      <div class="flex items-baseline justify-between">
+        <span class="text-[13px] text-dim">Pages open at</span><span class="dsp text-[28px] text-shu">{{ p.percent }}%</span>
+      </div>
+      <span class="text-xs text-mute">Starts at the top of the page. {{ kb.keyFor('jumpVert') }} jumps to the bottom.</span>
+    </div>
+  }
+</div>

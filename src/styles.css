@@ -1,36 +1,351 @@
 @import "tailwindcss";
 
-@keyframes spin { to { transform: rotate(360deg); } }
-.spin { animation: spin 0.75s linear infinite; }
+/* Layout switch: phones (and anything driven by a coarse pointer) get the mobile layout. Keep in sync with LayoutService. */
+@custom-variant mobile {
+  @media (max-width: 767.98px) { @slot; }
+  @media (pointer: coarse) { @slot; }
+}
 
-input[type=number]::-webkit-inner-spin-button,
-input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
+/* Ink & Screentone tokens. Only these colours exist: no stock Tailwind palette. */
+@theme {
+  --color-*: initial;
+  --color-black: #000;
+  --color-ink: #0b0b0c;
+  --color-surface-1: #141416;
+  --color-surface-2: #1e1e22;
+  --color-surface-3: #2a2a30;
+  --color-hover: #232328;
+  --color-line: #3a3a42;
+  --color-paper: #f4f1ea;
+  --color-dim: #bdb8ad;
+  --color-mute: #918c82;
+  --color-faint: #6e6a62;
+  --color-shu: #ff4d5e;
+  --color-gold: #ffd23f;
 
-.scrollbar { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.08) transparent; }
-.scrollbar::-webkit-scrollbar { width: 3px; }
-.scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+  --font-display: "Dela Gothic One", "Zen Kaku Gothic New", sans-serif;
+  --font-sans: "Zen Kaku Gothic New", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
 
-body.hide-cursor * { cursor: none !important; }
+  --text-display-xl: 5.25rem;
+  --text-display-lg: 3.25rem;
+  --text-display-md: 1.25rem;
+  --text-display-sm: 0.875rem;
 
-.topbar-panel    { transition: opacity 0.3s ease, transform 0.3s ease; }
-.topbar-panel.hidden-panel    { opacity: 0; transform: translateX(-10px); pointer-events: none; }
-.bottombar-panel { transition: opacity 0.3s ease, transform 0.3s ease; }
-.bottombar-panel.hidden-panel { opacity: 0; transform: translateY(8px); pointer-events: none; }
+  --shadow-hard: 6px 6px 0 #000;
+  --shadow-hard-sm: 4px 4px 0 #000;
+  --shadow-hard-lg: 10px 10px 0 #000;
+  --shadow-stamp: 4px 4px 0 var(--color-paper);
+  --shadow-focus: 3px 3px 0 var(--color-shu);
 
-.panel-body { overflow: hidden; transition: max-height 0.3s ease, opacity 0.3s ease; }
-.panel-body.collapsed { max-height: 0 !important; opacity: 0; }
+  /* Motion: fast, physical, hard-edged. */
+  --ease-snap: cubic-bezier(0.2, 0.9, 0.1, 1);
+  --ease-in-hard: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-spring: linear(0, 0.117 4%, 0.364 8%, 0.627 13%, 0.842 17%, 0.988 21%, 1.067 25%, 1.094 29%, 1.088 33%, 1.067 38%, 1.041 42%, 1.019 46%, 1.004 50%, 0.995 54%, 0.991 60%, 0.995 71%, 1 83%, 1);
+  --ease-spring-soft: linear(0, 0.132 5%, 0.386 10%, 0.631 15%, 0.815 20%, 0.933 25%, 0.996 30%, 1.023 35%, 1.028 40%, 1.017 50%, 1.005 60%, 1 70%, 1);
+}
 
-.backdrop { opacity: 0; pointer-events: none; transition: opacity 0.28s ease; }
-.backdrop.open { opacity: 1; pointer-events: all; }
+/* Textures: screentone instead of gradients. */
+@utility halftone {
+  background-image: radial-gradient(circle, var(--tone, var(--color-paper)) var(--dot, 1.6px), transparent calc(var(--dot, 1.6px) + 0.4px));
+  background-size: var(--grid, 8px) var(--grid, 8px);
+}
+@utility hatch {
+  background-image: repeating-linear-gradient(115deg, var(--tone, var(--color-surface-3)) 0 1.2px, transparent 1.2px 7px);
+}
+@utility dot-ground {
+  background: radial-gradient(circle, #1d1d21 1px, transparent 1.5px) 0 0 / 14px 14px, var(--color-ink);
+}
 
-.zone:hover .zone-arrow { color: rgba(255,255,255,0.2); }
+@layer base {
+  html, body { height: 100%; }
+  body {
+    @apply dot-ground text-paper font-sans font-medium overflow-hidden overscroll-none select-none;
+    font-size: 14px;
+    line-height: 1.4;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+  }
+  button { cursor: pointer; }
+  ::selection { background: var(--color-shu); color: var(--color-ink); }
+  :focus-visible { outline: 3px solid var(--color-gold); outline-offset: 2px; }
+  input { user-select: text; }
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+  input[type="number"] { -moz-appearance: textfield; }
+}
 
-.icon-btn.active { background: rgba(255,255,255,0.1) !important; border-color: rgba(255,255,255,0.22) !important; color: rgba(255,255,255,0.9) !important; }
-.kb-key.recording { background: rgba(139,92,246,0.18) !important; border-color: rgba(139,92,246,0.5) !important; color: rgba(255,255,255,0.4) !important; }
+/* Design-system primitives, shared by every component. */
+@layer components {
+  .dsp { @apply font-display font-normal uppercase; line-height: 1.05; letter-spacing: 0.01em; }
+  .lbl { @apply block font-mono text-[11px] font-medium tracking-[0.14em] uppercase text-mute whitespace-nowrap; }
+  .tag { @apply inline-block font-mono text-[10px] font-bold tracking-[0.12em] uppercase whitespace-nowrap px-1.5 py-0.5 border-[1.5px] border-current; line-height: 1.3; }
+  .tag-fill { @apply bg-shu border-shu text-ink; }
+  .tag-gold { @apply bg-gold border-gold text-ink; }
 
-.chevron-btn { transition: transform 0.3s ease; }
-.chevron-btn.collapsed { transform: rotate(-90deg); }
+  .pnl { @apply flex flex-col min-h-0 bg-surface-1 border-2 border-paper shadow-hard; }
 
-.settings-tab { padding: 0.2rem 0.65rem; border-radius: 0.45rem; font-size: 0.7rem; letter-spacing: 0.05em; border: 1px solid transparent; transition: all 0.15s; color: rgba(255,255,255,0.3); }
-.settings-tab:hover { color: rgba(255,255,255,0.6); background: rgba(255,255,255,0.05); }
-.settings-tab.active { color: rgba(255,255,255,0.85); background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.12); }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 h-10 px-3.5 border-2 border-paper bg-surface-1 text-paper
+      font-bold text-[13px] tracking-[0.08em] uppercase whitespace-nowrap no-underline;
+    transition: transform 90ms var(--ease-snap), box-shadow 90ms var(--ease-snap), background-color 120ms, color 120ms, border-color 120ms;
+  }
+  .btn:hover { @apply bg-surface-2; }
+  .btn:active { transform: translate(2px, 2px); }
+  .btn-primary { @apply bg-shu border-shu text-ink shadow-stamp; }
+  .btn-primary:hover { @apply bg-shu; filter: brightness(1.06); }
+  .btn-primary:active { transform: translate(4px, 4px); box-shadow: 0 0 0 var(--color-paper); }
+  .btn-ghost { @apply border-line text-dim bg-transparent; }
+  .btn-ghost:hover { @apply border-paper text-paper bg-transparent; }
+  .btn-on, .btn-on:hover { @apply bg-paper text-ink border-paper; }
+  .btn-sq { @apply w-10 px-0; }
+  .btn-lg { @apply h-13 text-sm; }
+  .btn-lg.btn-sq { @apply w-13; }
+  .btn:disabled, .btn[aria-disabled="true"] { @apply border-line text-faint bg-transparent shadow-none cursor-default; transform: none; filter: none; }
+
+  .ib {
+    @apply inline-flex items-center justify-center size-8 shrink-0 text-dim bg-transparent;
+    transition: transform 90ms var(--ease-snap), background-color 120ms, color 120ms;
+  }
+  .ib:hover { @apply text-paper bg-surface-2; }
+  .ib:active { transform: scale(0.9); }
+  .ib-on, .ib-on:hover { @apply bg-paper text-ink; }
+  .ib-lg { @apply size-12; }
+
+  .inp {
+    @apply h-10 w-full min-w-0 px-3 bg-ink border-2 border-line text-paper font-mono text-[13px] placeholder:text-faint outline-none;
+    transition: border-color 120ms, box-shadow 160ms var(--ease-snap);
+  }
+  .inp:hover { @apply border-mute; }
+  .inp:focus { @apply border-paper shadow-focus; }
+  .inp-err, .inp-err:hover, .inp-err:focus { @apply border-gold; }
+  .inp-lg { @apply h-13 text-[15px]; }
+
+  .stp { @apply flex h-10 border-2 border-line bg-ink; transition: border-color 120ms, box-shadow 160ms var(--ease-snap); }
+  .stp:focus-within { @apply border-paper shadow-focus; }
+  .stp > button { @apply w-[34px] shrink-0 flex items-center justify-center bg-surface-2 text-paper; transition: background-color 120ms; }
+  .stp > button:hover { @apply bg-surface-3; }
+  .stp > button:active { @apply bg-line; }
+  .stp > input { @apply flex-1 w-0 min-w-0 bg-transparent text-center font-mono text-sm font-bold outline-none; }
+  .stp-lg { @apply h-13; }
+  .stp-lg > button { @apply w-13; }
+
+  .tgl { @apply relative shrink-0 w-[54px] h-[30px] border-2 border-paper bg-ink; transition: background-color 160ms; }
+  .tgl::after {
+    content: ""; @apply absolute top-[3px] left-[3px] size-5 bg-mute;
+    transition: transform 260ms var(--ease-spring), background-color 160ms;
+  }
+  .tgl[aria-checked="true"] { @apply bg-shu; }
+  .tgl[aria-checked="true"]::after { @apply bg-ink; transform: translateX(24px); }
+
+  .key {
+    @apply inline-flex items-center justify-center min-w-11 h-[34px] px-2.5 border-2 border-b-4 border-line bg-surface-2 text-paper
+      text-[13px] font-bold whitespace-nowrap;
+    /* Zen Kaku Gothic has ← → but not ↑ ↓: take all arrows from one font. */
+    font-family: "JetBrains Mono", var(--font-sans);
+    transition: transform 90ms var(--ease-snap), border-color 120ms, color 120ms;
+  }
+  button.key:hover { @apply border-mute; }
+  button.key:active { transform: translateY(2px); border-bottom-width: 2px; }
+  .key-sm { @apply h-[26px] min-w-0 px-2 text-xs; }
+  .key-rec { @apply border-shu text-shu bg-shu/12; }
+  .key-bad { @apply border-gold text-gold; }
+
+  .tab {
+    @apply relative h-11 px-[18px] bg-transparent text-mute font-bold text-[13px] tracking-[0.1em] uppercase;
+    transition: color 120ms;
+  }
+  .tab:hover { @apply text-dim; }
+  .tab::after {
+    content: ""; @apply absolute left-0 right-0 bottom-0 h-1 bg-shu;
+    transform: scaleX(0); transform-origin: left; transition: transform 240ms var(--ease-snap);
+  }
+  .tab[aria-selected="true"] { @apply text-paper; }
+  .tab[aria-selected="true"]::after { transform: scaleX(1); }
+
+  /* Bottom bar buttons (desktop: row; mobile: icon over label). */
+  .nav-btn {
+    @apply flex items-center justify-center gap-1.5 whitespace-nowrap border-r-2 border-line bg-transparent px-4
+      text-xs font-bold uppercase tracking-[0.1em] text-paper;
+    transition: background-color 120ms, color 120ms;
+  }
+  .nav-btn:last-child { border-right-width: 0; }
+  .nav-btn:hover { @apply bg-surface-2; }
+  .nav-btn:active > * { transform: translateY(2px); }
+  .nav-btn > * { transition: transform 90ms var(--ease-snap); }
+  .nav-col { @apply flex-1 flex-col gap-0.5 px-0 text-[10px] text-dim; }
+  .nav-next, .nav-next:hover { @apply bg-paper text-ink; }
+  .nav-hot, .nav-hot:hover { @apply bg-shu text-ink; }
+  .nav-btn[aria-disabled="true"] { @apply bg-transparent text-faint cursor-default; }
+  .nav-btn[aria-disabled="true"] > * { transform: none; }
+
+  .prg { @apply block h-1.5 w-full bg-surface-3; }
+  .prg > i { @apply block h-full bg-paper origin-left; transition: transform 320ms var(--ease-snap); }
+  .prg-cur > i { @apply bg-shu; }
+
+  .tick { @apply flex gap-0.5; }
+  .tick > i { @apply flex-1 h-1 bg-surface-3; transition: background-color 160ms; }
+  .tick > i.on { @apply bg-shu; }
+
+  /* Range slider: shu fill, paper block thumb. --fill is set inline (0-100%). */
+  .rng { @apply appearance-none h-5 w-full bg-transparent cursor-pointer; }
+  .rng::-webkit-slider-runnable-track { height: 6px; background: linear-gradient(90deg, var(--color-shu) var(--fill), var(--color-surface-3) var(--fill)); }
+  .rng::-moz-range-track { height: 6px; background: linear-gradient(90deg, var(--color-shu) var(--fill), var(--color-surface-3) var(--fill)); }
+  .rng::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 20px; margin-top: -7px; background: var(--color-paper); border: 0; border-radius: 0; }
+  .rng::-moz-range-thumb { width: 12px; height: 20px; background: var(--color-paper); border: 0; border-radius: 0; }
+
+  .folio { @apply pointer-events-none fixed z-30 font-mono text-[11px] uppercase tracking-[0.14em] text-mute; }
+
+  /* A list with more rows below the fold fades out at its foot. */
+  .fade-foot { mask-image: linear-gradient(to bottom, #000 calc(100% - 56px), transparent); }
+
+  .scroll-thin { scrollbar-width: thin; scrollbar-color: var(--color-line) transparent; }
+
+  /* Cover fallbacks (shown until the real cover loads, or when it 404s). */
+  .cov-0 { background: linear-gradient(155deg, #ff4d5e 0 52%, #111 52%); }
+  .cov-1 { background: radial-gradient(circle at 60% 34%, #ffd23f 0 28%, transparent 29%), radial-gradient(circle, #f4f1ea 0.8px, transparent 1.2px) 0 0 / 6px 6px, #17171b; }
+  .cov-2 { background: linear-gradient(180deg, transparent 55%, #111 55%), radial-gradient(circle, #111 1.2px, transparent 1.6px) 0 0 / 5px 5px, #f4f1ea; }
+  .cov-3 { background: repeating-linear-gradient(115deg, #111 0 1.5px, transparent 1.5px 6px), #ffd23f; }
+  .cov-4 { background: repeating-conic-gradient(from 0deg at 50% 40%, #111 0 2deg, #d8d3c8 2deg 9deg); }
+  .cov-5 { background: radial-gradient(circle, #ff4d5e 1.4px, transparent 1.8px) 0 0 / 6px 6px, #f4f1ea; }
+  .cov-6 { background: linear-gradient(90deg, #111 0 38%, #f4f1ea 38% 52%, #ff4d5e 52%); }
+
+  /* Placeholder manga page panels (skeleton, previews, minimap). */
+  .t-speed { background: radial-gradient(circle at 62% 55%, #fff 0 18%, transparent 40%), repeating-conic-gradient(from 0deg at 62% 55%, #111 0 1.1deg, #fff 1.1deg 5deg); }
+  .t-dot { background: radial-gradient(circle, #111 1.3px, transparent 1.7px) 0 0 / 7px 7px, #fff; }
+  .t-hatch { background: repeating-linear-gradient(115deg, #111 0 1.2px, transparent 1.2px 7px), #fff; }
+}
+
+/* ---------- Motion ---------- */
+@keyframes fade-in { from { opacity: 0; } }
+@keyframes fade-out { to { opacity: 0; } }
+@keyframes rise-in { from { opacity: 0; transform: translateY(8px); } }
+@keyframes pop-in { from { opacity: 0; transform: translateY(6px) scale(0.96); } }
+@keyframes pop-out { to { opacity: 0; transform: translateY(4px) scale(0.97); } }
+@keyframes sheet-in { from { transform: translateY(100%); } }
+@keyframes sheet-out { to { transform: translateY(100%); } }
+@keyframes modal-in { from { opacity: 0; transform: scale(0.94); clip-path: inset(0 0 100% 0); } 60% { opacity: 1; } }
+@keyframes modal-out { to { opacity: 0; transform: scale(0.97); clip-path: inset(0 0 100% 0); } }
+@keyframes corner-in { from { clip-path: inset(0 0 100% 100%); } }
+@keyframes corner-out { to { clip-path: inset(0 0 100% 100%); } }
+@keyframes screen-in { from { clip-path: inset(0 0 0 100%); } }
+@keyframes screen-out { to { clip-path: inset(0 0 0 100%); } }
+@keyframes stamp-in {
+  0% { opacity: 0; transform: scale(1.32) rotate(-4deg); box-shadow: 0 0 0 #000; }
+  55% { opacity: 1; transform: scale(0.97) rotate(0.6deg); box-shadow: 2px 2px 0 #000; }
+  100% { transform: none; }
+}
+@keyframes row-in { from { opacity: 0; transform: translateX(-14px); } }
+@keyframes clip-down { from { clip-path: inset(0 0 100% 0); } }
+@keyframes clip-up { to { clip-path: inset(0 0 100% 0); opacity: 0; } }
+@keyframes shimmer { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+@keyframes seg { 0%, 100% { background-color: var(--color-surface-3); } 30%, 60% { background-color: var(--color-shu); } }
+@keyframes march { to { background-position: 14px 0; } }
+@keyframes halftone-in { from { opacity: 0; background-size: 2px 2px; } }
+
+/* Angular resolves styles to start an enter animation before the first class bindings land, so a
+   chip's initial state would otherwise animate in late (an active preset turning white after the
+   dialog settled). Nothing inside an entering element transitions. */
+:is(.a-fade-in, .a-rise-in, .a-pop-in, .a-sheet-in, .a-modal-in, .a-corner-in, .a-screen-in, .a-stamp-in, .a-clip-down) :is(*, *::before, *::after) {
+  transition: none !important;
+}
+
+/* Leaving overlays: the host carries .x-leave (so Angular keeps it until done) and its parts
+   say how they leave with data-leave. */
+@keyframes hold { to { opacity: 1; } }
+.x-leave { animation: hold 220ms linear both; }
+.x-leave [data-leave="fade"] { animation: fade-out 180ms ease-in both; }
+.x-leave [data-leave="sheet"] { animation: sheet-out 210ms var(--ease-in-hard) both; }
+.x-leave [data-leave="pop"] { animation: pop-out 150ms var(--ease-in-hard) both; }
+.x-leave [data-leave="modal"] { animation: modal-out 170ms var(--ease-in-hard) both; }
+.x-leave [data-leave="corner"] { animation: corner-out 210ms var(--ease-in-hard) both; }
+
+.a-fade-in { animation: fade-in 160ms ease-out both; }
+.a-fade-out { animation: fade-out 140ms ease-in both; }
+.a-rise-in { animation: rise-in 280ms var(--ease-snap) both; }
+.a-pop-in { animation: pop-in 220ms var(--ease-spring-soft) both; }
+.a-pop-out { animation: pop-out 140ms var(--ease-in-hard) both; }
+.a-sheet-in { animation: sheet-in 460ms var(--ease-spring) both; }
+.a-sheet-out { animation: sheet-out 200ms var(--ease-in-hard) both; }
+.a-modal-in { animation: modal-in 300ms var(--ease-snap) both; transform-origin: 50% 0; }
+.a-modal-out { animation: modal-out 160ms var(--ease-in-hard) both; transform-origin: 50% 0; }
+.a-corner-in { animation: corner-in 360ms var(--ease-snap) both; }
+.a-corner-out { animation: corner-out 220ms var(--ease-in-hard) both; }
+.a-screen-in { animation: screen-in 320ms var(--ease-snap) both; }
+.a-screen-out { animation: screen-out 200ms var(--ease-in-hard) both; }
+.a-stamp-in { animation: stamp-in 340ms var(--ease-snap) both; }
+.a-row-in { animation: row-in 260ms var(--ease-snap) both; animation-delay: calc(min(var(--i, 0), 12) * 28ms); }
+.a-clip-down { animation: clip-down 200ms var(--ease-snap) both; }
+.a-clip-up { animation: clip-up 140ms var(--ease-in-hard) both; }
+.a-stagger > * { animation: rise-in 360ms var(--ease-snap) both; }
+.a-stagger > :nth-child(2) { animation-delay: 40ms; }
+.a-stagger > :nth-child(3) { animation-delay: 80ms; }
+.a-stagger > :nth-child(4) { animation-delay: 120ms; }
+.a-stagger > :nth-child(5) { animation-delay: 160ms; }
+.a-stagger > :nth-child(n + 6) { animation-delay: 200ms; }
+.a-seg > i { animation: seg 1.2s steps(1, end) infinite; animation-delay: calc(var(--i) * 120ms); }
+.a-march { animation: march 600ms linear infinite; }
+.a-shimmer::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(100deg, transparent 30%, rgb(255 255 255 / 0.35) 50%, transparent 70%);
+  animation: shimmer 1.3s var(--ease-snap) infinite;
+}
+
+/* Chrome that slides away when panels hide. data-shown is set on the element. */
+.slide-x, .slide-up, .slide-down {
+  transition: transform 340ms var(--ease-spring-soft), opacity 200ms ease-out;
+}
+.slide-x[data-shown="false"] { transform: translateX(calc(-100% - 32px)); opacity: 0; pointer-events: none; transition-timing-function: var(--ease-in-hard), ease-in; transition-duration: 200ms, 200ms; }
+.slide-up[data-shown="false"] { transform: translateY(calc(100% + 32px)); opacity: 0; pointer-events: none; transition-timing-function: var(--ease-in-hard), ease-in; transition-duration: 200ms, 200ms; }
+.slide-down[data-shown="false"] { transform: translateY(calc(-100% - 8px)); opacity: 0; pointer-events: none; transition-timing-function: var(--ease-in-hard), ease-in; transition-duration: 200ms, 200ms; }
+
+/* ---------- Page turns: View Transitions ---------- */
+::view-transition { pointer-events: none; }
+::view-transition-old(root), ::view-transition-new(root) { animation: none; }
+::view-transition-old(root) { display: none; }
+::view-transition-group(*.chrome) { animation: none; }
+::view-transition-old(*.chrome) { display: none; }
+::view-transition-new(*.chrome) { animation: none; }
+.vt-page { view-transition-name: page; }
+/* Chrome above the page keeps painting above it during a turn. */
+.vt-rail { view-transition-name: vt-rail; view-transition-class: chrome; }
+.vt-bar { view-transition-name: vt-bar; view-transition-class: chrome; }
+.vt-chip { view-transition-name: vt-chip; view-transition-class: chrome; }
+.vt-map { view-transition-name: vt-map; view-transition-class: chrome; }
+/* The reading caption crossfades with the page (a group of its own), so it never changes before the image. */
+.vt-caption { view-transition-name: vt-caption; }
+.vt-top { view-transition-name: vt-top; view-transition-class: chrome; }
+.vt-nav { view-transition-name: vt-nav; view-transition-class: chrome; }
+
+/* Next/prev slide like a strip of pages: the old page leaves one screen width while the new one
+   arrives from the other side, both on the same curve so they move as one. */
+@keyframes turn-old-next { to { transform: translateX(-100vw); } }
+@keyframes turn-new-next { from { transform: translateX(100vw); } }
+@keyframes turn-old-prev { to { transform: translateX(100vw); } }
+@keyframes turn-new-prev { from { transform: translateX(-100vw); } }
+@keyframes turn-new-jump { from { opacity: 0; transform: scale(0.985); } }
+
+::view-transition-group(page) { animation-duration: 220ms; }
+::view-transition-old(page), ::view-transition-new(page) { animation: none; mix-blend-mode: normal; height: 100%; }
+html[data-turn="next"]::view-transition-old(page) { animation: turn-old-next 280ms var(--ease-snap) both; }
+html[data-turn="next"]::view-transition-new(page) { animation: turn-new-next 280ms var(--ease-snap) both; }
+html[data-turn="prev"]::view-transition-old(page) { animation: turn-old-prev 280ms var(--ease-snap) both; }
+html[data-turn="prev"]::view-transition-new(page) { animation: turn-new-prev 280ms var(--ease-snap) both; }
+html[data-turn="jump"]::view-transition-old(page) { animation: fade-out 140ms ease-in both; }
+html[data-turn="jump"]::view-transition-new(page) { animation: turn-new-jump 240ms var(--ease-snap) both; }
+
+/* ---------- Reduced motion: everything becomes a short fade. ----------
+   MotionService sets data-motion from the in-app setting (or the system's prefers-reduced-motion). */
+html[data-motion="reduced"] {
+  .a-rise-in, .a-pop-in, .a-sheet-in, .a-modal-in, .a-corner-in, .a-screen-in, .a-stamp-in, .a-row-in, .a-clip-down, .a-stagger > * {
+    animation: fade-in 120ms ease-out both !important;
+  }
+  .a-pop-out, .a-sheet-out, .a-modal-out, .a-corner-out, .a-screen-out, .a-clip-up { animation: fade-out 100ms ease-in both !important; }
+  .x-leave [data-leave] { animation: fade-out 100ms ease-in both !important; }
+  .a-shimmer::after, .a-march, .a-seg > i { animation: none !important; }
+  .slide-x, .slide-up, .slide-down { transition: opacity 120ms ease-out !important; }
+  .slide-x[data-shown="false"], .slide-up[data-shown="false"], .slide-down[data-shown="false"] { transform: none; }
+  .tgl::after, .tab::after, .prg > i { transition: none; }
+  &[data-turn]::view-transition-old(page) { animation: fade-out 100ms ease-in both !important; }
+  &[data-turn]::view-transition-new(page) { animation: fade-in 100ms ease-out both !important; }
+}

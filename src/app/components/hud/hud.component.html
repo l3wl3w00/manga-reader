@@ -1,0 +1,64 @@
+@let mobile = layout.mobile();
+@let zoomed = zoom.isZoomed();
+@let shown = ui.showPanels();
+
+@if (reading()) {
+  @if (mobile) {
+    @if (!shown && !zoomed && reader.screen() !== 'end') {
+      <div class="folio vt-caption bottom-4 left-4" animate.enter="a-fade-in" animate.leave="a-fade-out">
+        CH {{ reader.shown().chapter }} · {{ place() }}
+      </div>
+    }
+    @if (zoomed && zoomUiAwake() && !shown) {
+      <app-zoom-chip compact class="vt-chip fixed left-4 top-4 z-30" animate.enter="a-pop-in" animate.leave="a-fade-out" />
+      <app-minimap compact class="vt-map fixed right-4 top-4 z-30" animate.enter="a-pop-in" animate.leave="a-fade-out" />
+    }
+    @if (zoomed && !shown && !ui.panHintDismissed()) {
+      <div class="pnl fixed bottom-5 left-4 z-30 flex-row items-center gap-2 py-0 pl-3 pr-0 text-xs shadow-hard-sm" animate.enter="a-rise-in" animate.leave="a-fade-out">
+        <lucide-icon [img]="icons.hand" [size]="16" />Drag to pan · double-tap to fit
+        <button type="button" class="ib size-11" aria-label="Close hint" (click)="ui.dismissPanHint()">
+          <lucide-icon [img]="icons.x" [size]="16" />
+        </button>
+      </div>
+    }
+  } @else {
+    @if (shown && !zoomed) {
+      <div class="folio right-6 top-6 text-right leading-[1.7] max-xl:hidden" animate.enter="a-fade-in" animate.leave="a-fade-out">
+        {{ title() }}<br />Chapter {{ reader.shown().chapter }}
+      </div>
+    }
+    @if (!shown && !zoomed) {
+      @if (caption(); as text) {
+        <div class="folio vt-caption bottom-5 left-6" animate.enter="a-fade-in" animate.leave="a-fade-out">{{ text }}</div>
+      }
+      @if (reader.screen() === 'image' && hintsFit()) {
+        <div class="folio left-6 top-5 flex items-center gap-2" animate.enter="a-fade-in" animate.leave="a-fade-out">
+          <span class="key key-sm">{{ kb.keyFor('peekPanels') }}</span> peek panels
+          <span class="key key-sm ml-2.5">{{ kb.keyFor('togglePanels') }}</span> lock panels
+        </div>
+      }
+    }
+    @if (zoomed) {
+      <app-minimap class="vt-map fixed right-6 top-6 z-30" animate.enter="a-pop-in" animate.leave="a-pop-out" />
+      @if (!shown && !ui.panHintDismissed()) {
+        <div class="pnl fixed bottom-6 left-6 z-30 flex-row items-center gap-3.5 py-1 pl-3 pr-1 text-xs shadow-hard-sm" animate.enter="a-rise-in" animate.leave="a-fade-out">
+          <span class="flex items-center gap-1.5"><lucide-icon [img]="icons.hand" [size]="16" />Drag to pan</span>
+          <span class="text-dim">Wheel to zoom</span>
+          <span class="flex items-center gap-1.5"><span class="key key-sm">{{ kb.keyFor('jumpVert') }}</span><span class="text-dim">jump top / bottom</span></span>
+          <button type="button" class="ib size-7" aria-label="Close hint" title="Close hint" (click)="ui.dismissPanHint()">
+            <lucide-icon [img]="icons.x" [size]="14" />
+          </button>
+        </div>
+      }
+    }
+    @if (shown || zoomed) {
+      <!-- Below xl, with the panels up, there is no free corner: the chip lives in the rail instead. -->
+      <app-zoom-chip class="vt-chip fixed bottom-6 right-6 z-30" [class]="shown ? 'max-xl:hidden' : ''" animate.enter="a-pop-in" animate.leave="a-pop-out" />
+    }
+  }
+
+  @if (reader.totalPages()) {
+    <div class="pointer-events-none fixed bottom-0 left-0 z-[60] h-1 w-full origin-left bg-shu transition-transform duration-300 ease-snap"
+      [style.transform]="'scaleX(' + reader.progress() / 100 + ')'" aria-hidden="true"></div>
+  }
+}

@@ -8,9 +8,10 @@ const out = 'dist/manga-reader.html';
 let html = readFileSync(join(dir, 'index.html'), 'utf8');
 const read = (f) => readFileSync(join(dir, f), 'utf8');
 
-// Stylesheets: drop the <noscript> fallback, then replace each <link> with an inline <style>.
+// Stylesheets: drop the <noscript> fallback, then replace each local <link> with an inline <style>.
+// Remote stylesheets (Google Fonts) stay links.
 html = html.replace(/<noscript><link rel="stylesheet"[^>]*><\/noscript>/g, '');
-html = html.replace(/<link rel="stylesheet" href="([^"]+)"[^>]*>/g, (_, href) => `<style>${read(href)}</style>`);
+html = html.replace(/<link rel="stylesheet" href="(?!https?:)([^"]+)"[^>]*>/g, (_, href) => `<style>${read(href)}</style>`);
 
 // Scripts: inline each module script. Escape "</script" so the JS can't close the tag early.
 html = html.replace(/<script src="([^"]+)" type="module"><\/script>/g, (_, src) =>

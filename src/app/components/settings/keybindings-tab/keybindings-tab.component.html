@@ -1,0 +1,82 @@
+@let mobile = layout.mobile();
+<div class="flex flex-col gap-4" [class]="mobile ? 'p-5' : 'px-8 pt-6 pb-2'">
+  <!-- Presets -->
+  <div class="flex flex-wrap items-center gap-2">
+    <span class="lbl mr-2">Preset</span>
+    @for (p of presets; track p.id) {
+      @if (renaming() === p.id) {
+        <div class="relative" animate.enter="a-pop-in">
+          <input class="inp w-[200px] border-paper shadow-focus" type="text" aria-label="Preset name" [attr.maxlength]="nameMax"
+            [value]="renameValue()" (input)="renameValue.set($any($event.target).value)"
+            (keydown.enter)="commitRename()" (keydown.escape)="cancelRename($event)" (blur)="commitRename()" #renameInput />
+          <span class="absolute left-0 top-full mt-1 whitespace-nowrap font-mono text-[11px] text-mute">Enter saves · Esc cancels · {{ renameValue().length }} / {{ nameMax }}</span>
+        </div>
+      } @else {
+        <div class="group/p flex">
+          <button class="btn" [class.btn-on]="kb.activePreset() === p.id" [class.btn-ghost]="kb.activePreset() !== p.id"
+            [attr.aria-pressed]="kb.activePreset() === p.id" (click)="applyPreset(p.id)">{{ kb.getPresetLabel(p.id) }}</button>
+          <button class="btn btn-sq btn-ghost -ml-0.5 hidden group-hover/p:inline-flex group-focus-within/p:inline-flex"
+            (click)="startRename(p.id)" [attr.aria-label]="'Rename ' + kb.getPresetLabel(p.id) + ' preset'">
+            <lucide-icon [img]="icons.pencil" [size]="16" />
+          </button>
+        </div>
+      }
+    }
+    @if (!kb.activePreset()) {
+      <span class="tag ml-2 text-gold" animate.enter="a-pop-in">Custom, edited from {{ kb.getPresetLabel(kb.basePreset()) }}</span>
+    }
+    <button class="btn btn-ghost" [class.ml-auto]="!mobile" (click)="resetBindings()" [disabled]="!canReset()"
+      [title]="canReset() ? 'Back to the Default preset' : 'Nothing to reset: a preset is in use as it ships'">
+      <lucide-icon [img]="icons.reset" [size]="18" />Reset to defaults
+    </button>
+  </div>
+
+  <!-- Conflicts -->
+  @for (c of kb.conflicts(); track c.winner) {
+    <div class="flex flex-wrap items-center gap-3 border-2 border-gold bg-gold/8 px-3.5 py-2.5" role="alert" animate.enter="a-pop-in" animate.leave="a-pop-out">
+      <lucide-icon [img]="icons.alert" [size]="18" class="text-gold" />
+      <span class="min-w-[200px] flex-1 text-sm">
+        <b class="text-gold">{{ formatKey(c.binding) }} is bound {{ c.losers.length > 1 ? (c.losers.length + 1) + ' times' : 'twice' }}.</b>
+        {{ labels[c.winner] }} wins, so {{ loserNames(c.losers) }} never {{ c.losers.length > 1 ? 'fire' : 'fires' }}.
+      </span>
+      <button class="btn h-[34px] border-gold text-gold hover:border-gold hover:bg-gold/12" (click)="record(c.losers[0])">Rebind {{ labels[c.losers[0]] }}</button>
+    </div>
+  }
+
+  <!-- Actions -->
+  <div class="grid gap-x-12" [class]="mobile ? 'grid-cols-1' : 'grid-cols-2'">
+    @for (col of columns; track $index) {
+      <div>
+        @for (g of col; track g.label; let first = $first) {
+          <div class="lbl mb-1" [class]="first ? 'mt-1' : 'mt-[18px]'">{{ g.label }}</div>
+          @for (action of g.actions; track action; let last = $last) {
+            @let rec = kb.recordingAction() === action;
+            <div class="relative flex min-h-[46px] items-center justify-between gap-3 text-sm" [class.border-b]="!last" [class.border-line]="!last">
+              @if (rec) { <span class="absolute -inset-x-3 inset-y-0 bg-shu/8" animate.enter="a-fade-in"></span> }
+              <span class="relative">
+                {{ labels[action] }}
+                @if (rec) {
+                  <span class="ml-2 text-xs text-mute">was <span class="font-mono">{{ recordingWas() }}</span> · Esc cancels</span>
+                } @else if (losers().has(action)) {
+                  <span class="tag ml-2 text-gold">Conflict</span>
+                } @else if (hold.has(action)) {
+                  <span class="ml-2 text-xs text-mute">hold</span>
+                }
+              </span>
+              <button class="key relative" [class.key-rec]="rec" [class.key-bad]="!rec && clashes().has(action)" (click)="record(action)"
+                [attr.aria-label]="rec ? 'Recording ' + labels[action] + '. Press a key' : keyLabel(action)" [attr.aria-live]="rec ? 'polite' : null">
+                {{ rec ? 'Press a key…' : formatKey(kb.bindings()[action]) }}
+              </button>
+            </div>
+          }
+        }
+      </div>
+    }
+  </div>
+</div>
+@if (!mobile) {
+  <div class="flex items-center gap-2.5 border-t-2 border-line px-8 py-3.5 text-xs text-dim">
+    <span>Click a key to record a new one. Bindings save as you go.</span>
+    <span class="ml-auto flex items-center gap-1.5"><span class="key key-sm">Esc</span> closes</span>
+  </div>
+}

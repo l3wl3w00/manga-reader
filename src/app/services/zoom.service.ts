@@ -1,33 +1,49 @@
 import { Injectable, signal, computed } from '@angular/core';
+import { FitSettings, Size, View, clampView, fitView, visibleRegion, zoomAround } from './zoom-math';
 
-const MIN_ZOOM = 1, MAX_ZOOM = 4, ZOOM_STEP = 0.15;
-export { ZOOM_STEP };
+export const ZOOM_STEP = 0.15;
 export const PAN_STEP = 80;
 
 const AUTOZOOM_STORAGE = 'manga-reader-autozoom';
 const FITZOOM_STORAGE  = 'manga-reader-fitzoom';
 
+export interface DragStart { startX: number; startY: number; panX: number; panY: number; }
+
+function readJson<T>(key: string, fallback: T): T {
+  try { return JSON.parse(localStorage.getItem(key) || 'null') ?? fallback; } catch { return fallback; }
+}
+
 @Injectable({ providedIn: 'root' })
 export class ZoomService {
-  zoom   = signal(1);
-  panX   = signal(0);
-  panY   = signal(0);
-  mouseX = signal(window.innerWidth / 2);
-  mouseY = signal(window.innerHeight / 2);
-  isDragging = signal(false);
+  readonly zoom   = signal(1);
+  readonly panX   = signal(0);
+  readonly panY   = signal(0);
+  readonly mouseX = signal(window.innerWidth / 2);
+  readonly mouseY = signal(window.innerHeight / 2);
+  readonly isDragging = signal(false);
+  /** Natural size of the page on screen, once loaded. */
+  readonly imageSize = signal<Size | null>(null);
+  /** Bumped by every zoom or pan, so the zoom chip can show itself on mobile. */
+  readonly activity = signal(0);
 
-  autoFit = signal(JSON.parse(localStorage.getItem(AUTOZOOM_STORAGE) || 'false') as boolean);
-  fitSettings = signal<{ heightPct: number; maxWidthPct: number }>({
-    heightPct: 60, maxWidthPct: 90,
-    ...JSON.parse(localStorage.getItem(FITZOOM_STORAGE) || '{}'),
+  readonly autoFit = signal<boolean>(readJson(AUTOZOOM_STORAGE, false));
+  readonly fitSettings = signal<FitSettings>({ heightPct: 60, maxWidthPct: 90, ...readJson(FITZOOM_STORAGE, {}) });
+
+  readonly transform = computed(() => `translate(${this.panX()}px,${this.panY()}px) scale(${this.zoom()})`);
+  readonly percent = computed(() => Math.round(this.zoom() * 100));
+  readonly isZoomed = computed(() => this.zoom() > 1.001);
+  /** Visible part of the page (fractions), for the minimap. */
+  readonly region = computed(() => {
+    const img = this.imageSize();
+    return img ? visibleRegion(this.viewport(), img, this.view()) : null;
   });
 
-  transform = computed(() =>
-    `translate(${this.panX()}px,${this.panY()}px) scale(${this.zoom()})`
-  );
+  private viewport(): Size { return { w: window.innerWidth, h: window.innerHeight }; }
+  private view(): View { return { zoom: this.zoom(), panX: this.panX(), panY: this.panY() }; }
 
-  saveFitSettings() {
-    localStorage.setItem(FITZOOM_STORAGE, JSON.stringify(this.fitSettings()));
+  private apply(v: View) {
+    this.zoom.set(v.zoom); this.panX.set(v.panX); this.panY.set(v.panY);
+    this.activity.update(n => n + 1);
   }
 
   toggleAutoFit() {
@@ -37,55 +53,59 @@ export class ZoomService {
 
   updateFitSettings(heightPct: number, maxWidthPct: number) {
     this.fitSettings.set({ heightPct, maxWidthPct });
-    this.saveFitSettings();
+    localStorage.setItem(FITZOOM_STORAGE, JSON.stringify(this.fitSettings()));
   }
 
-  clampPan() {
-    const vw = window.innerWidth, vh = window.innerHeight, z = this.zoom();
-    this.panX.set(Math.max(vw * (1 - z), Math.min(0, this.panX())));
-    this.panY.set(Math.max(vh * (1 - z), Math.min(0, this.panY())));
+  clampPan() { this.apply(clampView(this.viewport(), this.view())); }
+
+  /** Zooms toward the mouse (or the given point). */
+  setZoom(nz: number, cx = this.mouseX(), cy = this.mouseY()) {
+    this.apply(zoomAround(this.viewport(), this.view(), nz, cx, cy));
   }
 
-  setZoom(nz: number) {
-    nz = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, nz));
-    const z = this.zoom(), mx = this.mouseX(), my = this.mouseY();
-    if (nz === MIN_ZOOM) { this.panX.set(0); this.panY.set(0); }
-    else {
-      const sc = nz / z;
-      this.panX.set(mx - (mx - this.panX()) * sc);
-      this.panY.set(my - (my - this.panY()) * sc);
-    }
-    this.zoom.set(nz);
-    this.clampPan();
+  panBy(dx: number, dy: number) {
+    this.apply(clampView(this.viewport(), { zoom: this.zoom(), panX: this.panX() + dx, panY: this.panY() + dy }));
   }
 
-  resetZoom() { this.zoom.set(1); this.panX.set(0); this.panY.set(0); }
+  /** Space: jump between the top and the bottom of the page. */
+  jumpVertical() {
+    const minY = window.innerHeight * (1 - this.zoom());
+    this.apply(clampView(this.viewport(), { ...this.view(), panY: this.panY() > minY / 2 ? minY : 0 }));
+  }
+
+  resetZoom() { this.apply({ zoom: 1, panX: 0, panY: 0 }); }
 
   autoFitZoom(iw: number, ih: number) {
-    const vw = window.innerWidth, vh = window.innerHeight;
-    const scale = Math.min(vw / iw, vh / ih);
-    const rw = iw * scale, rh = ih * scale;
-    const ry = (vh - rh) / 2;
-    const fs = this.fitSettings();
-    const nz = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM,
-      Math.min((fs.maxWidthPct / 100) * vw / rw, vh / ((fs.heightPct / 100) * rh))
-    ));
-    this.zoom.set(nz);
-    this.panX.set(vw * (1 - nz) / 2);
-    this.panY.set(-ry * nz);
-    this.clampPan();
+    this.apply(fitView(this.viewport(), { w: iw, h: ih }, this.fitSettings()));
   }
 
-  startDrag(clientX: number, clientY: number): { startX: number; startY: number; panX: number; panY: number } {
+  /** Applies the auto-fit framing to the current page. */
+  fitPage() {
+    const img = this.imageSize();
+    if (img) this.autoFitZoom(img.w, img.h);
+  }
+
+  startDrag(clientX: number, clientY: number): DragStart {
     this.isDragging.set(true);
     return { startX: clientX, startY: clientY, panX: this.panX(), panY: this.panY() };
   }
 
-  doDrag(drag: { startX: number; startY: number; panX: number; panY: number }, clientX: number, clientY: number) {
-    this.panX.set(drag.panX + (clientX - drag.startX));
-    this.panY.set(drag.panY + (clientY - drag.startY));
-    this.clampPan();
+  doDrag(drag: DragStart, clientX: number, clientY: number) {
+    this.apply(clampView(this.viewport(), {
+      zoom: this.zoom(),
+      panX: drag.panX + (clientX - drag.startX),
+      panY: drag.panY + (clientY - drag.startY),
+    }));
   }
 
   endDrag() { this.isDragging.set(false); }
+
+  /** Pinch: scale from the start view by `ratio` around the start midpoint, following the midpoint as it moves. */
+  pinch(start: View, startMid: { x: number; y: number }, ratio: number, mid: { x: number; y: number }) {
+    const zoomed = zoomAround(this.viewport(), start, start.zoom * ratio, startMid.x, startMid.y);
+    if (zoomed.zoom === 1) { this.apply(zoomed); return; }
+    this.apply(clampView(this.viewport(), { ...zoomed, panX: zoomed.panX + mid.x - startMid.x, panY: zoomed.panY + mid.y - startMid.y }));
+  }
+
+  snapshot(): View { return this.view(); }
 }

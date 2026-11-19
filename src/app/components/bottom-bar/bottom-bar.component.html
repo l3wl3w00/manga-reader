@@ -1,26 +1,43 @@
-<div class="flex items-center gap-1.5 px-3 py-2 rounded-2xl border border-white/[0.07] bg-zinc-900/90"
-  style="backdrop-filter:blur(16px);box-shadow:0 8px 32px rgba(0,0,0,0.5)">
-  <button (click)="reader.prevChapter()"
-    class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-white/55
-    border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.07] hover:text-white/80 transition-all">
-    «  Chapter
+@let busy = reader.busy();
+@let ch = reader.chapter();
+<!-- Fixed slot widths: the buttons never move between pages, whatever their labels say. -->
+<nav class="flex h-13 items-stretch border-2 border-paper bg-surface-1 shadow-hard" aria-label="Page navigation" [attr.aria-busy]="busy">
+  <button class="nav-btn w-[104px] px-0 max-xl:w-13" [attr.aria-disabled]="busy || ch <= 1" (click)="reader.prevChapter()"
+    [attr.aria-label]="ch > 1 ? 'Previous chapter, ' + (ch - 1) : 'No previous chapter'">
+    <lucide-icon [img]="icons.chevronsLeft" [size]="18" /><span class="max-xl:hidden">CH @if (ch > 1) { {{ ch - 1 }} }</span>
   </button>
-  <button (click)="reader.prevPageFull()"
-    class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-white/55
-    border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.07] hover:text-white/80 transition-all">
-    ‹ Page
+  <button class="nav-btn w-[88px] px-0 max-xl:w-13" [attr.aria-disabled]="busy || atStart()" (click)="reader.prevPageFull()" aria-label="Previous page">
+    <lucide-icon [img]="icons.chevronLeft" [size]="18" /><span class="max-xl:hidden">Page</span>
   </button>
-  <div class="px-3 text-xs text-white/40 tracking-wide tabular-nums min-w-[60px] text-center">
-    {{reader.info()}}
+
+  <div class="flex min-w-0 flex-1 flex-col justify-center gap-[5px] border-r-2 border-line px-4 max-xl:w-24 max-xl:flex-none max-xl:px-3">
+    <div class="text-center font-mono text-[15px] font-bold" aria-live="polite">
+      @if (reader.totalPages(); as tp) {
+        {{ pad2(reader.shown().page) }} <span class="text-mute">/ {{ tp }}</span>
+      } @else {
+        Page {{ pad2(reader.shown().page) }}
+      }
+    </div>
+    @if (ticks(); as t) {
+      <div class="tick" aria-hidden="true">@for (on of t; track $index) { <i [class.on]="on"></i> }</div>
+    } @else if (reader.totalPages()) {
+      <span class="prg prg-cur h-1"><i [style.transform]="'scaleX(' + reader.progress() / 100 + ')'"></i></span>
+    } @else {
+      <div class="h-1 bg-[repeating-linear-gradient(90deg,var(--color-shu)_0_8px,transparent_8px_14px)]" [class.a-march]="busy" aria-hidden="true"></div>
+    }
   </div>
-  <button (click)="reader.nextPageFull()"
-    class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-white/55
-    border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.07] hover:text-white/80 transition-all">
-    Page ›
+
+  @if (reader.atLastPage() && !busy) {
+    <button class="nav-btn nav-hot w-[112px] px-0 max-xl:w-16" (click)="reader.nextPageFull()"
+      [attr.aria-label]="'Next page: chapter ' + (ch + 1) + ', page 1'" [title]="'Chapter ' + (ch + 1) + ', page 1'">
+      <span class="max-xl:hidden">Next ch</span><span class="xl:hidden">CH</span><lucide-icon [img]="icons.arrowRight" [size]="18" />
+    </button>
+  } @else {
+    <button class="nav-btn w-[112px] px-0 max-xl:w-16" [class.nav-next]="!busy" [attr.aria-disabled]="busy" (click)="reader.nextPageFull()" aria-label="Next page">
+      <span class="max-xl:hidden">Page</span><lucide-icon [img]="icons.chevronRight" [size]="18" />
+    </button>
+  }
+  <button class="nav-btn w-[104px] px-0 max-xl:w-13" [attr.aria-disabled]="busy" (click)="reader.nextChapter()" [attr.aria-label]="'Next chapter, ' + (ch + 1)">
+    <span class="max-xl:hidden">CH {{ ch + 1 }}</span><lucide-icon [img]="icons.chevronsRight" [size]="18" />
   </button>
-  <button (click)="reader.nextChapter()"
-    class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-white/55
-    border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.07] hover:text-white/80 transition-all">
-    Chapter »
-  </button>
-</div>
+</nav>

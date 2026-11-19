@@ -1,0 +1,81 @@
+@let count = lib.entries().length;
+<app-sheet label="Library" [tall]="true" (closed)="ui.closeSheet()">
+  <div sheetHeader class="flex items-center border-b-2 border-paper pt-1 pb-2.5 pl-5 pr-2">
+    <h1 class="dsp text-xl">Library</h1>
+    <span class="ml-3 mr-auto font-mono text-xs text-mute">{{ count }} {{ count === 1 ? 'title' : 'titles' }}</span>
+    <button class="ib ib-lg text-paper" (click)="ui.closeSheet()" aria-label="Close"><lucide-icon [img]="icons.x" [size]="20" /></button>
+  </div>
+
+  @if (count) {
+    <div class="scroll-thin min-h-0 flex-1 overflow-y-auto overscroll-contain">
+      @for (item of lib.listing(); track item.section ?? item.entry!.slug; let i = $index) {
+        @if (item.section) {
+          <div class="flex h-7 items-center border-b border-line bg-surface-2 px-5">
+            <span class="lbl" [class.text-gold]="item.section === 'Favourites'">{{ item.section }}</span>
+            @if (item.section === 'Recent') { <span class="ml-auto text-xs text-mute">Swipe a row for actions</span> }
+          </div>
+        } @else {
+          @let e = item.entry!;
+          @let x = offset(e.slug);
+          <div class="relative overflow-hidden border-b border-line" animate.enter="a-row-in" animate.leave="a-clip-up" [style.--i]="i">
+            <div class="absolute inset-y-0 right-0 flex" [style.width.px]="actionsW" [class.invisible]="x === 0 && drag()?.slug !== e.slug && !closing().has(e.slug)">
+              <button class="flex flex-1 flex-col items-center justify-center gap-1.5 bg-gold text-[11px] font-bold uppercase tracking-[0.08em] text-ink"
+                (click)="favourite(e.slug)"
+                [attr.aria-label]="(e.favourite ? 'Unfavourite ' : 'Favourite ') + lib.formatName(e.slug)">
+                <lucide-icon [img]="icons.star" [size]="20" />{{ e.favourite ? 'Unfavourite' : 'Favourite' }}
+              </button>
+              <button class="flex flex-1 flex-col items-center justify-center gap-1.5 bg-shu text-[11px] font-bold uppercase tracking-[0.08em] text-ink"
+                (click)="askRemove(e)" [attr.aria-label]="'Remove ' + lib.formatName(e.slug)">
+                <lucide-icon [img]="icons.trash" [size]="20" />Remove
+              </button>
+            </div>
+            <div class="relative flex min-h-[103px] touch-pan-y items-center gap-3 py-3 pl-5"
+              [class]="(e.favourite ? 'pr-2 ' : 'pr-5 ') + (e.slug === current() ? 'bg-surface-2' : x ? 'bg-hover' : 'bg-surface-1')"
+              [class.border-r-2]="x !== 0" [class.border-paper]="x !== 0"
+              [style.transform]="x ? 'translateX(' + x + 'px)' : 'none'" (transitionend)="$event.propertyName === 'transform' && closed(e.slug)"
+              [style.transition]="drag()?.slug === e.slug ? 'none' : 'transform 320ms var(--ease-spring), background-color 150ms'"
+              role="button" tabindex="0" [attr.aria-current]="e.slug === current() ? 'true' : null"
+              (pointerdown)="down($event, e.slug)" (pointermove)="move($event)" (pointerup)="up($event, e)" (pointercancel)="cancel()"
+              (keydown.enter)="tap(e)">
+              <app-cover [slug]="e.slug" [large]="true" />
+              <app-library-entry [entry]="e" [current]="e.slug === current()" [large]="true" />
+              @if (e.favourite) {
+                <button class="ib ib-lg text-gold [&_svg]:fill-current" (click)="favourite(e.slug)" (pointerdown)="$event.stopPropagation()"
+                  [attr.aria-label]="'Unfavourite ' + lib.formatName(e.slug)">
+                  <lucide-icon [img]="icons.star" [size]="20" />
+                </button>
+              }
+            </div>
+          </div>
+        }
+      }
+    </div>
+  } @else {
+    <div class="flex flex-1 flex-col items-center justify-center gap-[18px] px-8 py-6 text-center" animate.enter="a-rise-in">
+      <div class="flex gap-2" aria-hidden="true">
+        <span class="h-[78px] w-14 border-2 border-dashed border-line"></span>
+        <span class="h-[78px] w-14 border-2 border-dashed border-line"></span>
+        <span class="flex h-[78px] w-14 items-center justify-center border-2 border-dashed border-mute text-mute"><lucide-icon [img]="icons.plus" [size]="20" /></span>
+      </div>
+      <h2 class="dsp text-[26px]">Empty shelf</h2>
+      <p class="text-[15px] leading-normal text-dim">Start reading a manga and it lands here on its own, with your place in every chapter.</p>
+    </div>
+    <div class="px-5 pb-7"><button class="btn btn-primary btn-lg w-[calc(100%-4px)]" (click)="findManga()">Find a manga</button></div>
+  }
+</app-sheet>
+
+@if (removing(); as r) {
+  <app-sheet [label]="'Remove ' + lib.formatName(r.slug) + '?'" [danger]="true" [level]="1" (closed)="removing.set(null)">
+    <div class="flex flex-col gap-4 px-5 pt-3.5 pb-7">
+      <div class="flex items-center gap-4">
+        <app-cover [slug]="r.slug" [large]="true" />
+        <h1 class="dsp min-w-0 flex-1 text-[22px]">Remove {{ lib.formatName(r.slug) }}?</h1>
+      </div>
+      <p class="text-[15px] leading-normal text-dim">
+        It leaves your library and forgets your place: chapter {{ r.lastChapter ?? 1 }}, page {{ r.lastPage ?? 1 }}. Reading it again adds it back from page 1.
+      </p>
+      <button class="btn btn-primary btn-lg my-1 mr-1" (click)="confirmRemove()"><lucide-icon [img]="icons.trash" [size]="18" />Remove</button>
+      <button class="btn btn-lg" (click)="removing.set(null)">Keep it</button>
+    </div>
+  </app-sheet>
+}
