@@ -1,0 +1,8 @@
+# Netlify deploys come from GitHub Actions (.github/workflows/ci.yml), which builds, tests and runs
+# `netlify deploy`. These settings also make a Netlify-side build work if the repo is ever linked there.
+[build]
+  command = "npm run build"
+  publish = "dist/manga-reader/browser"
+
+[build.environment]
+  NODE_VERSION = "26"

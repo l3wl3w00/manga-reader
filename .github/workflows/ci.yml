@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Test and build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          cache: npm
+      # .npmrc sets legacy-peer-deps: lucide-angular 1.0.0 declares peers only up to Angular 21.
+      - run: npm ci
+      - run: npx ng test --watch=false
+      - run: npm run build:single
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist
+          path: |
+            dist/manga-reader/browser
+            dist/manga-reader.html
+          retention-days: 7
+
+  deploy:
+    name: Deploy to Netlify
+    needs: build
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+      NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist
+      - name: Skip when Netlify isn't set up yet
+        if: env.NETLIFY_AUTH_TOKEN == '' || env.NETLIFY_SITE_ID == ''
+        run: echo "::warning::NETLIFY_AUTH_TOKEN or NETLIFY_SITE_ID is not set; skipping the deploy."
+      - uses: actions/setup-node@v7
+        if: env.NETLIFY_AUTH_TOKEN != '' && env.NETLIFY_SITE_ID != ''
+        with:
+          node-version: 26
+      - name: Deploy
+        if: env.NETLIFY_AUTH_TOKEN != '' && env.NETLIFY_SITE_ID != ''
+        run: >-
+          npx --yes netlify-cli@27 deploy --prod --no-build
+          --dir dist/manga-reader/browser
+          --message "${{ github.ref_name }} ${{ github.sha }}"
+
+  release:
+    name: GitHub release
+    needs: build
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist
+      - name: Create the release with the single-file build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh release create "${{ github.ref_name }}" dist/manga-reader.html
+          --repo "${{ github.repository }}" --title "${{ github.ref_name }}" --generate-notes
