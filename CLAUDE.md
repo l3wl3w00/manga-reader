@@ -64,7 +64,8 @@ put `animate.leave: 'x-leave'` on the host and `data-leave` on their parts.
 - `ZoomService` + `zoom-math.ts` — the current page zooms and pans inside a frame (its strip slot): at 100% the frame
   is the page; zooming grows it (`frameAt`) up to `maxW` (`maxFrameWidth`), which keeps `DESKTOP_NEIGHBOUR_MIN` (72 px)
   of each neighbour on screen on desktop (from the rail's edge while the panels are locked) and the 14 px slivers on
-  mobile (where the frame only grows taller). Pan clamps to the frame (`clampPan`); zoom toward a point
+  mobile (where the frame only grows taller), except on a phone with auto-fit on: there the frame may take the full
+  window width, so auto-fit zooms a portrait page in and the slivers go off screen (owner's choice). Pan clamps to the frame (`clampPan`); zoom toward a point
   (`zoomAround`), drag, pinch, auto-fit (`fitView`: max width % also capped by the frame), minimap region
   (`visibleRegion`: the part of the page in the frame). Coordinates are the strip's: pointer positions have
   `railOffset` taken off. `inset`: on mobile the page sits 20 px in from each side at 100%. `railOffset`

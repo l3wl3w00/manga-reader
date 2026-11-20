@@ -52,14 +52,16 @@ export class ZoomService {
   });
 
   /** The page at 100% and how wide its frame may grow: a strip of each neighbour always stays on screen
-   *  (desktop: DESKTOP_NEIGHBOUR_MIN px, measured from the rail's edge while it is locked; mobile: the slivers). */
+   *  (desktop: DESKTOP_NEIGHBOUR_MIN px, measured from the rail's edge while it is locked; mobile: the slivers).
+   *  Exception, the owner's choice: on a phone with auto-fit on, the frame may grow to the full window width, so
+   *  auto-fit can zoom a portrait page in (the slivers go off screen while zoomed). */
   readonly geometry = computed<FrameGeometry>(() => {
     const vp = this.layout.viewport(), mobile = this.layout.mobile();
     const page = containRect(vp, this.imageSize() ?? TYPICAL_PAGE, this.inset());
     const off = this.railOffset();
     const left = (this.railLocked() ? RAIL_EDGE : 0) - off, right = vp.w - off;
     const maxW = mobile
-      ? maxFrameWidth(page.x + page.w / 2, left, right, STRIP_GAP.mobile, MOBILE_SLIVER)
+      ? (this.autoFit() ? vp.w : maxFrameWidth(page.x + page.w / 2, left, right, STRIP_GAP.mobile, MOBILE_SLIVER))
       : maxFrameWidth(page.x + page.w / 2, left, right, STRIP_GAP.desktop, DESKTOP_NEIGHBOUR_MIN);
     return { page, maxW, vpH: vp.h };
   });
