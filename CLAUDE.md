@@ -17,7 +17,9 @@ npm run build:single  # one self-contained file → dist/manga-reader.html (scri
 
 Install with `npm ci`.
 
-External image source: `https://images.mangafreak.me/mangas/{manga}/{manga}_{ch}/{manga}_{ch}_{pg}.jpg` with `referrerpolicy="no-referrer"`.
+Default image source: `https://images.mangafreak.me/mangas/{manga}/{manga}_{ch}/{manga}_{ch}_{pg}.jpg`, loaded with
+`referrerpolicy="no-referrer"`. The page image, search and chapter-link URLs are templates the user can change in
+Settings > Source: every URL goes through `SourceService`, never built by hand.
 
 ## Architecture
 
@@ -44,8 +46,10 @@ put `animate.leave: 'x-leave'` on the host and `data-leave` on their parts.
   right after the chapter's last page, see `classifyMiss`), `not-found` (page 1, a missing chapter or a misspelt
   manga). After each page it fetches the neighbours ahead (`preloadAround`, `probeNext`: a 404 there is the chapter's
   length; at a known last page the next chapter's page 1). Captions and counters read `shown` and `shownTotal` (the
-  page on screen and its chapter's length), so they change with the page, not before it. `buildUrl` lives in
-  `source.ts`.
+  page on screen and its chapter's length), so they change with the page, not before it. Page addresses come from
+  `SourceService.pageUrl`; when the page template changes, the page on screen keeps its address (`imgSrc`, also in the
+  strip) and the neighbours are fetched again from the new one, without probing (a 404 there must not shorten the
+  chapter). `buildUrl` (`source.ts`) is the default template, for tests.
 - `PageTurnService` — runs a page change: `next`/`prev`/`arrive` through the page strip's animator (the reader
   registers it with `attach`: `before`, update, `after`; `settle` ends a running turn at once), `jump` in a View
   Transition fade (`data-turn` on `<html>`), `none` instantly.
@@ -73,6 +77,14 @@ put `animate.leave: 'x-leave'` on the host and `data-leave` on their parts.
   `UiService` lazily (through `Injector`): UiService reaches it through ReaderService.
 - `KeybindingsService` — presets, renaming, recording (`recordKey`), `actionFor` (match order `ACTION_PRIORITY`),
   `conflicts` (`findConflicts`, same order), `basePreset`.
+- `SourceService` + `source.ts` — the three URL templates in use (`templates`: page images, search link, chapter
+  link; `manga-reader-source`), `pageUrl` (the reader, preload, strip, covers), `searchUrl`, `chapterUrl`, and
+  `searchSite` / `chapterSite` (how buttons name the site: MangaFreak, a short host, or "the site"; null when the link
+  is emptied, which hides its buttons everywhere). Field `drafts` and `commit`: only a valid template is ever saved or
+  used (`refused` marks "Not saved"). `source.ts` holds the rules (`checkTemplate`: page images need http(s), `{ch}`
+  and `{pg}`, a missing `{manga}` only warns; search needs `{query}`, URL-encoded), the one-tap fixes, substitution
+  (`resolveParts` marks the values; the chapter link's `{manga}` is Title_Cased like MangaFreak's chapter pages) and
+  the Test probe (`probeImage`: one "Couldn't load" for a 404 or a blocked host).
 - `UiService` — `panelsLocked` / `peeking` / `showPanels`, `settingsOpen`, mobile `sheet` ('jump' | 'library').
 - `LayoutService` — `mobile`, `finePointer` media signals, `viewport` size.
 - `MotionService` — Motion setting (`system` / `full` / `reduced`), sets `data-motion` on `<html>`. Chrome on Linux
@@ -105,10 +117,12 @@ put `animate.leave: 'x-leave'` on the host and `data-leave` on their parts.
   the page's frame (`inFrame`), never over a neighbour strip; with the bottom bar up the chip sits above it. The
   desktop bottom bar centres on the page (its frame when zoomed), kept clear of the rail and the window edge.
 - `WelcomeComponent`, `NotFoundComponent`, `LoadingCardComponent`, `EndOfChapterComponent` (both layouts).
-- `SettingsComponent` — dialog (desktop: Keybindings / Zoom / Appearance) or full screen (mobile: Controls / Zoom /
-  Appearance) with `KeybindingsTabComponent`, `ZoomTabComponent`, `AppearanceTabComponent` (backdrop, neighbour
-  pages, live preview, and `MotionTabComponent` as its Motion section), `ControlsTabComponent` (mobile: the gestures,
-  and a Keybindings row opening `KeybindingsTabComponent` when a fine pointer exists).
+- `SettingsComponent` — dialog (desktop: Keybindings / Zoom / Appearance / Source) or full screen (mobile: Controls /
+  Zoom / Appearance / Source) with `KeybindingsTabComponent`, `ZoomTabComponent`, `AppearanceTabComponent` (backdrop,
+  neighbour pages, live preview, and `MotionTabComponent` as its Motion section), `ControlsTabComponent` (mobile: the
+  gestures, and a Keybindings row opening `KeybindingsTabComponent` when a fine pointer exists), `SourceTabComponent`
+  (the URL templates: a field saves on blur or Enter when valid, else shows "Not saved"; placeholder chips insert at
+  the caret; one-tap fixes; live "resolves to" preview; Test loads the resolved page).
   It is modal: the layouts make everything else `inert` while it is open, Tab wraps inside it (`ui/focus-trap.ts`),
   focus starts on the active tab and returns to the opener.
 
@@ -137,6 +151,8 @@ sheet, drag to dismiss), `CoverComponent`, `PageArtComponent`.
 - `manga-reader-backdrop`: JSON `{ mode, solid, solidCustom, drift, driftCustom }` (see `normalizeBackdrop`); absent =
   Solid Ink.
 - `manga-reader-neighbours`: `'25'` or `'50'` (% of backdrop through the hidden neighbours); absent = opaque.
+- `manga-reader-source`: JSON with the URL templates that differ from the defaults (`image`, `search`, `chapter`;
+  `""` turns a link off); absent = the defaults; an invalid entry falls back to its default (`normalizeSource`).
 
 **Keybinding presets**: Default, WASD, Eating — stored in `KeybindingsService.PRESETS`.
 

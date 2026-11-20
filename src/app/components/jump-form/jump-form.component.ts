@@ -3,18 +3,10 @@ import { LucideDynamicIcon } from '@lucide/angular';
 import { ReaderService } from '../../services/reader.service';
 import { ZoomService } from '../../services/zoom.service';
 import { UiService } from '../../services/ui.service';
+import { SourceService } from '../../services/source.service';
 import { ICONS } from '../../ui/icons';
 
 export function normManga(raw: string) { return raw.trim().toLowerCase().replace(/\s+/g, '_'); }
-
-export function searchUrl(name: string) {
-  return `https://ww2.mangafreak.me/Find/${encodeURIComponent(name.replace(/_/g, ' ').trim())}`;
-}
-
-export function chapterUrl(manga: string, chapter: number) {
-  const name = manga.split('_').map(w => (w[0]?.toUpperCase() ?? '') + w.slice(1)).join('_');
-  return `https://ww2.mangafreak.me/Read1_${name}_${chapter}`;
-}
 
 /** Manga / chapter / page entry. panel: desktop rail, where the steppers navigate at once (as before).
  *  sheet and welcome: mobile, where the steppers edit a draft that Go applies. */
@@ -28,6 +20,7 @@ export class JumpFormComponent {
   protected reader = inject(ReaderService);
   protected zoom = inject(ZoomService);
   private ui = inject(UiService);
+  protected source = inject(SourceService);
   protected readonly icons = ICONS;
 
   readonly variant = input<'panel' | 'sheet' | 'welcome'>('panel');
@@ -81,12 +74,13 @@ export class JumpFormComponent {
   }
 
   protected search() {
-    const q = this.mangaDraft() || this.reader.manga();
-    if (q.trim()) window.open(searchUrl(q), '_blank', 'noopener');
+    const url = this.source.searchUrl(this.mangaDraft() || this.reader.manga());
+    if (url) window.open(url, '_blank', 'noopener');
   }
 
   protected openSite() {
-    if (this.loaded()) window.open(chapterUrl(this.reader.manga(), this.reader.chapter()), '_blank', 'noopener');
+    const url = this.loaded() ? this.source.chapterUrl(this.reader.manga(), this.reader.chapter()) : null;
+    if (url) window.open(url, '_blank', 'noopener');
   }
 
   protected openSettings() { this.ui.openSettings(); }

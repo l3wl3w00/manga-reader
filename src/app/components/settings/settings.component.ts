@@ -9,15 +9,16 @@ import { KeybindingsTabComponent } from './keybindings-tab/keybindings-tab.compo
 import { ZoomTabComponent } from './zoom-tab/zoom-tab.component';
 import { ControlsTabComponent } from './controls-tab/controls-tab.component';
 import { AppearanceTabComponent } from './appearance-tab/appearance-tab.component';
+import { SourceTabComponent } from './source-tab/source-tab.component';
 
-type Tab = 'keys' | 'zoom' | 'appearance' | 'controls';
-const TAB_LABELS: Record<Tab, string> = { keys: 'Keybindings', zoom: 'Zoom', appearance: 'Appearance', controls: 'Controls' };
+type Tab = 'keys' | 'zoom' | 'appearance' | 'controls' | 'source';
+const TAB_LABELS: Record<Tab, string> = { keys: 'Keybindings', zoom: 'Zoom', appearance: 'Appearance', controls: 'Controls', source: 'Source' };
 
-/** Settings: a dialog on desktop (Keybindings, Zoom, Appearance), full screen on mobile (Controls, with the
- *  keybindings inside when a keyboard is around, Zoom, Appearance). */
+/** Settings: a dialog on desktop (Keybindings, Zoom, Appearance, Source), full screen on mobile (Controls, with
+ *  the keybindings inside when a keyboard is around, Zoom, Appearance, Source). */
 @Component({
   selector: 'app-settings',
-  imports: [LucideDynamicIcon, KeybindingsTabComponent, ZoomTabComponent, AppearanceTabComponent, ControlsTabComponent],
+  imports: [LucideDynamicIcon, KeybindingsTabComponent, ZoomTabComponent, AppearanceTabComponent, ControlsTabComponent, SourceTabComponent],
   host: { class: 'fixed inset-0 z-[100]', 'animate.leave': 'x-leave', '(keydown.tab)': 'trapTab($event)', '(keydown.shift.tab)': 'trapTab($event)' },
   template: `
     @let mobile = layout.mobile();
@@ -54,6 +55,7 @@ const TAB_LABELS: Record<Tab, string> = { keys: 'Keybindings', zoom: 'Zoom', app
           @case ('zoom') { <app-zoom-tab class="a-fade-in" /> }
           @case ('appearance') { <app-appearance-tab class="a-fade-in" /> }
           @case ('controls') { <app-controls-tab class="a-fade-in" /> }
+          @case ('source') { <app-source-tab class="a-fade-in" /> }
         }
       </div>
     </section>
@@ -67,7 +69,7 @@ export class SettingsComponent {
   protected readonly labels = TAB_LABELS;
 
   protected readonly tabs = computed<Tab[]>(() =>
-    this.layout.mobile() ? ['controls', 'zoom', 'appearance'] : ['keys', 'zoom', 'appearance']);
+    this.layout.mobile() ? ['controls', 'zoom', 'appearance', 'source'] : ['keys', 'zoom', 'appearance', 'source']);
   protected readonly active = linkedSignal<Tab[], Tab>({
     source: this.tabs,
     computation: (tabs, prev) => (prev && tabs.includes(prev.value) ? prev.value : tabs[0]),

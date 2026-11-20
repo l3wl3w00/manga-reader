@@ -2,6 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { ReaderService } from './reader.service';
 import { LibraryService } from './library.service';
 import { PreloadService } from './preload.service';
+import { SourceService } from './source.service';
 import { LayoutService } from './layout.service';
 import { ZoomService } from './zoom.service';
 import { PageTurnService } from './page-turn.service';
@@ -31,6 +32,7 @@ export class StripService {
   private reader = inject(ReaderService);
   private lib = inject(LibraryService);
   private preload = inject(PreloadService);
+  private source = inject(SourceService);
   private layout = inject(LayoutService);
   private zoom = inject(ZoomService);
   private turn = inject(PageTurnService);
@@ -53,9 +55,14 @@ export class StripService {
       ? { manga: r.manga(), chapter: r.chapter(), page: r.page() }
       : screen === 'image' || screen === 'end' ? r.lastGood() : null;
     if (!spot) return null;
+    // The page on screen keeps the address it loaded from, also after the page template changes: a new template
+    // applies from the next turn (the neighbours already use it).
+    const g = r.lastGood(), shownUrl = r.imgSrc(), loading = screen === 'loading';
     return {
       ...spot,
-      loading: screen === 'loading',
+      loading,
+      url: (manga, chapter, page) => !loading && shownUrl && g && g.manga === manga && g.chapter === chapter && g.page === page
+        ? shownUrl : this.source.pageUrl(manga, chapter, page),
       total: this.lengthOf(spot.manga, spot.chapter),
       prevTotal: spot.chapter > 1 ? this.lengthOf(spot.manga, spot.chapter - 1) : null,
       ready: url => this.preload.ready(url),

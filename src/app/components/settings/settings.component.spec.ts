@@ -44,6 +44,27 @@ describe('Settings dialog focus', () => {
     fixture.nativeElement.remove();
   });
 
+  it('keeps Tab inside on the Source tab too', async () => {
+    const fixture = TestBed.createComponent(Host);
+    document.body.appendChild(fixture.nativeElement);
+    fixture.componentInstance.open.set(true);
+    await fixture.whenStable();
+    const dialog = fixture.nativeElement.querySelector('[role=dialog]') as HTMLElement;
+    const tabs = [...dialog.querySelectorAll<HTMLButtonElement>('[role=tab]')];
+    expect(tabs.map(t => t.textContent!.trim())).toEqual(['Keybindings', 'Zoom', 'Appearance', 'Source']);
+    tabs[3].click();
+    await fixture.whenStable();
+    expect(dialog.querySelector('#src-image')).toBeTruthy();
+    const list = focusables(dialog);
+    expect(list).toContain(dialog.querySelector('#src-chapter'));
+    list[list.length - 1].focus();
+    tab(document.activeElement!);
+    expect(document.activeElement).toBe(list[0]);
+    tab(document.activeElement!, true);
+    expect(document.activeElement).toBe(list[list.length - 1]);
+    fixture.nativeElement.remove();
+  });
+
   it('makes the app behind inert while open', async () => {
     const fixture = TestBed.createComponent(DesktopLayoutComponent);
     await fixture.whenStable();

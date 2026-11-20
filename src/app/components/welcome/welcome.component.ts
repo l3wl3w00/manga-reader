@@ -1,6 +1,7 @@
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { KeybindingsService } from '../../services/keybindings.service';
 import { LayoutService } from '../../services/layout.service';
+import { SourceService } from '../../services/source.service';
 import { PageArtComponent } from '../../ui/page-art/page-art.component';
 
 /** First run, nothing loaded: how to start. */
@@ -23,7 +24,7 @@ import { PageArtComponent } from '../../ui/page-art/page-art.component';
           <h1 class="dsp text-[clamp(52px,6.2vw,84px)]">Pick up<br />a story.</h1>
           <p class="max-w-[460px] text-lg leading-normal text-dim">Type a manga name, choose a chapter and press Go. Or open a title from your library.</p>
           <ol class="flex flex-col border-2 border-paper">
-            @for (step of steps; track step.n) {
+            @for (step of steps(); track step.n) {
               <li class="flex items-baseline gap-4 border-b-2 border-line px-4 py-3.5 last:border-b-0">
                 <span class="dsp text-xl text-shu">{{ step.n }}</span>
                 <span><b>{{ step.title }}</b>&ngsp;<span class="text-dim">{{ step.text }}</span></span>
@@ -52,9 +53,10 @@ import { PageArtComponent } from '../../ui/page-art/page-art.component';
 export class WelcomeComponent {
   protected kb = inject(KeybindingsService);
   protected layout = inject(LayoutService);
-  protected readonly steps = [
-    { n: '01', title: 'Name it.', text: "Use the site's spelling. Not sure? Search on MangaFreak." },
+  private source = inject(SourceService);
+  protected readonly steps = computed(() => [
+    { n: '01', title: 'Name it.', text: "Use the site's spelling." + (this.source.searchSite() ? ` Not sure? Search on ${this.source.searchSite()}.` : '') },
     { n: '02', title: 'Pick a spot.', text: 'Chapter and page both start at 1.' },
     { n: '03', title: 'Read.', text: 'Click the page beside this one to turn to it. The keys and the bottom bar roll on into the next chapter.' },
-  ];
+  ]);
 }

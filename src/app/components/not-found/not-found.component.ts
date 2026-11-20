@@ -5,7 +5,7 @@ import { LibraryService } from '../../services/library.service';
 import { LayoutService } from '../../services/layout.service';
 import { UiService } from '../../services/ui.service';
 import { ICONS } from '../../ui/icons';
-import { searchUrl } from '../jump-form/jump-form.component';
+import { SourceService } from '../../services/source.service';
 
 /** The manga, chapter or first page does not exist. */
 @Component({
@@ -28,10 +28,15 @@ import { searchUrl } from '../jump-form/jump-form.component';
         <li class="flex gap-3"><span class="font-mono text-shu">1</span>Check the {{ mobile ? 'name' : 'manga name' }}. It has to match the site's spelling.</li>
         <li class="flex gap-3"><span class="font-mono text-shu">2</span>Check the chapter and page numbers.</li>
         <li class="flex gap-3"><span class="font-mono text-shu">3</span>The image host may be {{ mobile ? 'down' : 'slow or down' }}. Try again in a moment.</li>
+        @if (source.imageEdited()) {
+          <li class="flex gap-3"><span class="font-mono text-shu">4</span>Your page address is a custom one. Check it in Settings › Source.</li>
+        }
       </ul>
       @if (!mobile) {
         <div class="flex flex-wrap gap-3.5 pt-2">
-          <button class="btn btn-primary btn-lg" (click)="search()">Search on MangaFreak<svg [lucideIcon]="icons.externalLink" [size]="18" /></button>
+          @if (source.searchSite(); as site) {
+            <button class="btn btn-primary btn-lg" (click)="search()">Search on {{ site }}<svg [lucideIcon]="icons.externalLink" [size]="18" /></button>
+          }
           <button class="btn btn-lg" (click)="reader.retry()"><svg [lucideIcon]="icons.reset" [size]="18" />Try again</button>
           @if (backLabel(); as label) {
             <button class="btn btn-lg btn-ghost" (click)="reader.backToLastGood()">{{ label }}</button>
@@ -41,8 +46,10 @@ import { searchUrl } from '../jump-form/jump-form.component';
     </div>
     @if (mobile) {
       <div class="flex shrink-0 flex-col gap-3 px-5 pt-5 pb-7">
-        <button class="btn btn-primary btn-lg mr-1" (click)="search()">Search on MangaFreak<svg [lucideIcon]="icons.externalLink" [size]="18" /></button>
-        <div class="mt-1 flex gap-3">
+        @if (source.searchSite(); as site) {
+          <button class="btn btn-primary btn-lg mr-1" (click)="search()">Search on {{ site }}<svg [lucideIcon]="icons.externalLink" [size]="18" /></button>
+        }
+        <div class="flex gap-3" [class.mt-1]="source.searchSite()">
           <button class="btn btn-lg flex-1" (click)="reader.retry()"><svg [lucideIcon]="icons.reset" [size]="18" />Try again</button>
           <button class="btn btn-lg flex-1" (click)="ui.openSheet('jump')">Edit entry</button>
         </div>
@@ -55,6 +62,7 @@ export class NotFoundComponent {
   protected layout = inject(LayoutService);
   protected ui = inject(UiService);
   private lib = inject(LibraryService);
+  protected source = inject(SourceService);
   protected readonly icons = ICONS;
 
   protected readonly backLabel = computed(() => {
@@ -64,6 +72,7 @@ export class NotFoundComponent {
 
   protected search() {
     const m = this.reader.missed();
-    if (m) window.open(searchUrl(m.manga), '_blank', 'noopener');
+    const url = m ? this.source.searchUrl(m.manga) : null;
+    if (url) window.open(url, '_blank', 'noopener');
   }
 }

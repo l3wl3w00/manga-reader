@@ -2,6 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import { ReaderService, Spot, buildUrl, classifyMiss } from './reader.service';
 import { PreloadService } from './preload.service';
 import { LibraryService } from './library.service';
+import { SourceService } from './source.service';
+import { StripService } from './strip.service';
 
 const spot = (page: number, chapter = 214, manga = 'crimson_tide_ronin'): Spot => ({ manga, chapter, page });
 
@@ -144,5 +146,61 @@ describe('ReaderService misses', () => {
     reader.backFromEnd();
     expect(reader.screen()).toBe('image');
     expect(reader.imgSrc()).toBe(buildUrl('crimson_tide_ronin', 214, 19));
+  });
+});
+
+describe('ReaderService with a custom page template', () => {
+  const CUSTOM = 'https://cdn.example.org/manga/{manga}/ch{ch}/{pg}.jpg';
+  /** Only the custom host has pages (214 has 19); the default host has none. */
+  class CustomHost extends FakeImage {
+    override set src(url: string) {
+      const m = url.match(/^https:\/\/cdn\.example\.org\/manga\/crimson_tide_ronin\/ch214\/(\d+)\.jpg$/);
+      setTimeout(() => (m && +m[1] <= 19 ? this.onload?.() : this.onerror?.()));
+    }
+  }
+  let reader: ReaderService;
+  let source: SourceService;
+
+  beforeEach(() => {
+    localStorage.clear();
+    vi.stubGlobal('Image', CustomHost);
+    TestBed.configureTestingModule({});
+    source = TestBed.inject(SourceService);
+    source.edit('image', CUSTOM);
+    source.commit('image');
+    reader = TestBed.inject(ReaderService);
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('loads pages and fetches neighbours from the custom template', async () => {
+    reader.load('crimson_tide_ronin', 214, 7);
+    await settle();
+    expect(reader.screen()).toBe('image');
+    expect(reader.imgSrc()).toBe('https://cdn.example.org/manga/crimson_tide_ronin/ch214/7.jpg');
+    const preload = TestBed.inject(PreloadService);
+    expect(preload.ready('https://cdn.example.org/manga/crimson_tide_ronin/ch214/8.jpg')).toBe(true);
+    expect(TestBed.inject(StripService).next()?.url).toBe('https://cdn.example.org/manga/crimson_tide_ronin/ch214/8.jpg');
+  });
+
+  it('keeps using the last valid template when an invalid one is typed', async () => {
+    source.edit('image', 'https://cdn.example.org/manga/{manga}/ch{ch}.jpg');
+    expect(source.commit('image')).toBe(false);
+    reader.load('crimson_tide_ronin', 214, 3);
+    await settle();
+    expect(reader.imgSrc()).toBe('https://cdn.example.org/manga/crimson_tide_ronin/ch214/3.jpg');
+  });
+
+  it('keeps the page on screen when the template changes, and takes neighbours from the new one', async () => {
+    reader.load('crimson_tide_ronin', 214, 7);
+    await settle();
+    source.reset('image');
+    TestBed.tick();
+    await settle();
+    const strip = TestBed.inject(StripService);
+    const cur = strip.items().find(i => i.k === 0)!;
+    expect(cur.url).toBe('https://cdn.example.org/manga/crimson_tide_ronin/ch214/7.jpg');
+    expect(strip.next()?.url).toBe(buildUrl('crimson_tide_ronin', 214, 8));
+    // The new template's 404s while trying it out don't shorten the chapter in the library.
+    expect(TestBed.inject(LibraryService).chapterLength('crimson_tide_ronin', 214)).toBeNull();
   });
 });

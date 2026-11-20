@@ -7,7 +7,7 @@ const url = (ch: number, pg: number) => buildUrl(M, ch, pg);
 
 function place(page: number, opts: Partial<StripPlace> & { readyUrls?: string[] } = {}): StripPlace {
   const ready = new Set(opts.readyUrls ?? []);
-  return { manga: M, chapter: 214, page, total: 19, prevTotal: 22, ready: u => ready.has(u), ...opts };
+  return { manga: M, chapter: 214, page, total: 19, prevTotal: 22, url: buildUrl, ready: u => ready.has(u), ...opts };
 }
 
 describe('strip slots', () => {

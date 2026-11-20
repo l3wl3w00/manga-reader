@@ -1,5 +1,6 @@
-import { Component, computed, inject, input, signal } from '@angular/core';
+import { Component, computed, inject, input, linkedSignal } from '@angular/core';
 import { LibraryService } from '../../services/library.service';
+import { SourceService } from '../../services/source.service';
 
 /** Picks one of the seven screentone fallbacks from the slug, so a title keeps its look. */
 export function coverVariant(slug: string): number {
@@ -8,7 +9,7 @@ export function coverVariant(slug: string): number {
   return Math.abs(h) % 7;
 }
 
-/** A title's cover: chapter 1 page 1 from the image host, over a screentone fallback with initials. */
+/** A title's cover: chapter 1 page 1 from the page template, over a screentone fallback with initials. */
 @Component({
   selector: 'app-cover',
   host: {
@@ -27,15 +28,14 @@ export function coverVariant(slug: string): number {
 })
 export class CoverComponent {
   private lib = inject(LibraryService);
+  private source = inject(SourceService);
   readonly slug = input.required<string>();
   readonly large = input(false);
 
-  protected readonly loaded = signal(false);
-  protected readonly failed = signal(false);
+  protected readonly url = computed(() => this.source.pageUrl(this.slug(), 1, 1));
+  /** Both start over when the address changes (a new page template). */
+  protected readonly loaded = linkedSignal(() => (this.url(), false));
+  protected readonly failed = linkedSignal(() => (this.url(), false));
   protected readonly variant = computed(() => coverVariant(this.slug()));
   protected readonly initials = computed(() => this.lib.initials(this.slug()));
-  protected readonly url = computed(() => {
-    const s = this.slug();
-    return `https://images.mangafreak.me/mangas/${s}/${s}_1/${s}_1_1.jpg`;
-  });
 }

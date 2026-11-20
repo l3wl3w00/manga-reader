@@ -1,0 +1,243 @@
+@let mobile = layout.mobile();
+@let f = fields();
+@let img = f.image;
+@let at = place();
+@let t = test();
+
+<!-- The Edited / Default / Not saved tag. -->
+<ng-template #tag let-v>
+  @if (v.refused) {
+    <span class="tag text-gold">Not saved</span>
+  } @else if (v.edited) {
+    <span class="tag text-gold">Edited</span>
+  } @else {
+    <span class="tag text-dim">Default</span>
+  }
+</ng-template>
+
+<!-- Problems under a field, with their one-tap fixes. -->
+<ng-template #problems let-v let-input="input">
+  @if (v.problems.length) {
+    <div class="flex flex-col gap-2" [id]="'src-' + v.key + '-msg'" [attr.role]="v.refused ? 'alert' : null">
+      @for (p of v.problems; track p.title) {
+        <span class="flex items-start gap-2.5 text-[13px] leading-normal">
+          <svg [lucideIcon]="icons.alert" [size]="16" class="mt-0.5 shrink-0 text-gold" />
+          <span><b class="text-gold">{{ p.title }}</b> {{ p.detail }}</span>
+        </span>
+      }
+      @if (v.refused) {
+        <span class="text-xs text-mute">The reader keeps using the last valid template.</span>
+      }
+      @if (v.fixes.length) {
+        <div class="flex flex-wrap gap-2">
+          @for (x of v.fixes; track x.label) {
+            <button type="button" class="btn border-gold px-3 font-mono text-[13px] tracking-normal text-gold normal-case"
+              [class]="mobile ? 'h-11 flex-1' : 'h-9'" (click)="fix(v.key, x, input)">{{ x.label }}</button>
+          }
+        </div>
+      }
+    </div>
+  }
+</ng-template>
+
+<!-- A placeholder chip: inserts at the caret, and keeps the field focused on mouse and touch. -->
+<ng-template #chip let-key let-name="name" let-input="input" let-tall="tall">
+  <button type="button" class="btn btn-ghost font-mono tracking-normal normal-case"
+    [class]="tall ? (mobile ? 'h-12 px-2.5 text-[13px]' : 'h-10 px-3 text-xs') : mobile ? 'h-11 px-3 text-[13px]' : 'h-[30px] px-2.5 text-xs'"
+    [attr.aria-label]="'Insert {' + name + '}'" (mousedown)="noDefault($event)" (click)="insert(key, name, input)">{{ '{' + name + '}' }}</button>
+</ng-template>
+
+<ng-template #resolved let-parts>
+  @for (x of parts; track $index) {<span [class]="x.value ? 'font-bold text-shu' : null">{{ x.text }}</span>}
+</ng-template>
+
+<ng-template #resetBtn let-v let-input="input" let-label="label">
+  @if (mobile) {
+    @if (v.edited || v.refused) {
+      <button type="button" class="ib size-11 -mr-2.5 text-paper" [attr.aria-label]="'Reset ' + label + ' to default'" (click)="reset(v.key, input)">
+        <svg [lucideIcon]="icons.reset" [size]="18" />
+      </button>
+    }
+  } @else {
+    <button type="button" class="btn btn-ghost ml-auto h-[30px] gap-1.5 px-2.5 text-[11px]" [disabled]="!v.edited && !v.refused"
+      [attr.aria-label]="'Reset ' + label + ' to default'" (click)="reset(v.key, input)">
+      <svg [lucideIcon]="icons.reset" [size]="14" />Reset to default
+    </button>
+  }
+</ng-template>
+
+<ng-template #emptyNote let-text>
+  <span class="flex items-center gap-2 text-xs text-dim">
+    <svg [lucideIcon]="icons.eyeOff" [size]="15" class="shrink-0" />{{ text }}
+  </span>
+</ng-template>
+
+<!-- The Test button's result: not tested, loading, loaded (with the page), or couldn't load. -->
+<ng-template #status>
+  @let thumb = mobile ? 'h-12 w-[34px]' : 'h-[86px] w-[60px]';
+  <div id="src-test" role="status" class="flex min-h-16 min-w-0 flex-1 gap-3 border-2 bg-ink"
+    [class]="t?.state === 'fail' ? 'items-start border-gold bg-gold/8 p-2.5' : 'items-center ' + (t?.state === 'ok' ? 'border-paper' : 'border-line') + (mobile ? ' px-2.5 py-1.5' : ' p-2.5')">
+    @switch (t?.state) {
+      @case ('testing') {
+        <span class="halftone shrink-0 bg-surface-2 [--tone:var(--color-line)] [--dot:1.3px] [--grid:7px]" [class]="thumb" aria-hidden="true"></span>
+        <span class="flex min-w-0 flex-1 flex-col gap-2">
+          <b>Loading the test page</b>
+          <span class="a-seg flex gap-1" aria-hidden="true">
+            @for (i of [0, 1, 2, 3, 4]; track i) { <i class="h-2 flex-1 bg-surface-3" [style.--i]="i"></i> }
+          </span>
+        </span>
+      }
+      @case ('ok') {
+        <img [src]="t!.url" referrerpolicy="no-referrer" alt="" class="shrink-0 bg-paper object-cover object-top" [class]="thumb" />
+        <span class="flex min-w-0 flex-col" [class]="mobile ? 'gap-0.5' : 'gap-1.5'">
+          <b class="flex items-center gap-1.5"><svg [lucideIcon]="icons.circleCheck" [size]="18" />Loaded</b>
+          <span class="font-mono text-[11px] leading-normal text-dim">
+            {{ t!.size }}@if (mobile) { · } @else { <br /> }{{ t!.time }}
+          </span>
+        </span>
+      }
+      @case ('fail') {
+        <svg [lucideIcon]="icons.circleX" [size]="18" class="mt-0.5 shrink-0 text-gold" />
+        <span class="flex min-w-0 flex-col gap-1 text-[13px] leading-normal">
+          <b class="text-gold">Couldn't load</b>
+          <span>No image came back from this address. It may be wrong, or the host may not allow it here.</span>
+          @if (img.edited && !img.refused) { <span class="text-xs text-mute">Saved anyway. Pages won't load until this works.</span> }
+        </span>
+      }
+      @default {
+        <span class="text-xs leading-normal text-mute">
+          @if (img.url) { Not tested yet. Test loads page {{ at.pg }} of chapter {{ at.ch }}. } @else { Fix the address to test it. }
+        </span>
+      }
+    }
+  </div>
+</ng-template>
+
+<ng-template #testBtn>
+  <button type="button" class="btn" [class]="mobile ? 'min-h-16 h-auto shrink-0 px-4' : 'h-9'"
+    [disabled]="!img.url || t?.state === 'testing'" aria-describedby="src-test" (click)="runTest()">
+    @if (t?.state === 'testing') { Testing } @else {
+      <svg [lucideIcon]="icons.play" [size]="15" />{{ t ? 'Test again' : 'Test' }}
+    }
+  </button>
+</ng-template>
+
+<ng-template #imageBody let-input>
+  <div class="flex flex-wrap items-center gap-2">
+    <span class="lbl" [class.mr-1]="!mobile">Insert</span>
+    @for (n of placeholders.image; track n) {
+      <ng-container *ngTemplateOutlet="chip; context: { $implicit: 'image', name: n, input }" />
+    }
+    @if (!mobile) { <span class="ml-1.5 text-xs text-mute">Inserts at the cursor. {{ '{manga}' }} uses underscores.</span> }
+  </div>
+  @if (img.parts) {
+    <div id="src-image-prev" class="flex flex-col gap-1.5 border-2 border-line bg-ink px-3 py-2.5">
+      <span class="lbl whitespace-normal">
+        @if (mobile) { Chapter {{ at.ch }}, page {{ at.pg }} resolves to }
+        @else { Resolves to · {{ at.sample ? 'a sample, ' : '' }}{{ at.name }}, chapter {{ at.ch }}, page {{ at.pg }} }
+      </span>
+      <span class="font-mono text-xs leading-normal break-all text-dim"><ng-container *ngTemplateOutlet="resolved; context: { $implicit: img.parts }" /></span>
+    </div>
+  }
+</ng-template>
+
+<div class="flex flex-col" [class]="mobile ? '' : 'gap-[22px] px-8 pt-[22px] pb-6'">
+
+  <!-- 1. Page images -->
+  <section [class]="mobile ? 'flex flex-col gap-2.5 px-4 pt-3 pb-4' : 'grid grid-cols-[minmax(0,1fr)_196px] gap-6'" aria-labelledby="src-image-label">
+    <div class="flex min-w-0 flex-col gap-2.5" [class.contents]="mobile">
+      <div class="flex items-center" [class]="mobile ? 'gap-2' : 'gap-2.5'">
+        <label class="dsp" [class]="mobile ? 'mr-auto text-[15px]' : 'text-base'" for="src-image" id="src-image-label">Page images</label>
+        @if (!mobile) { <span class="tag text-dim">Required</span> }
+        <ng-container *ngTemplateOutlet="tag; context: { $implicit: img }" />
+        <ng-container *ngTemplateOutlet="resetBtn; context: { $implicit: img, input: imageInput, label: 'page images' }" />
+      </div>
+      <input #imageInput class="inp text-xs" [class.h-12]="mobile" [class.inp-err]="img.refused" id="src-image" type="url"
+        spellcheck="false" autocomplete="off" autocapitalize="off" [value]="img.text" [placeholder]="defaults.image"
+        [attr.aria-invalid]="img.refused" [attr.aria-describedby]="img.problems.length ? 'src-image-msg' : img.parts ? 'src-image-prev' : null"
+        (input)="onInput('image', $event)" (blur)="onBlur('image', $event)" (keydown.enter)="commit('image')" />
+      <ng-container *ngTemplateOutlet="problems; context: { $implicit: img, input: imageInput }" />
+      <ng-container *ngTemplateOutlet="imageBody; context: { $implicit: imageInput }" />
+    </div>
+    <div class="flex gap-2.5" [class]="mobile ? 'items-start' : 'flex-col'">
+      <ng-container *ngTemplateOutlet="testBtn" />
+      <ng-container *ngTemplateOutlet="status" />
+    </div>
+  </section>
+
+  <!-- 2. Search link -->
+  @let s = f.search;
+  <section class="flex flex-col border-t border-line" [class]="mobile ? 'gap-2 px-4 pt-2 pb-3.5' : 'gap-2.5 pt-5'" aria-labelledby="src-search-label">
+    <div class="flex min-h-11 items-center" [class]="mobile ? 'gap-2' : 'gap-2.5'">
+      <label class="dsp" [class]="mobile ? 'mr-auto text-[15px]' : 'text-base'" for="src-search" id="src-search-label">Search link</label>
+      <ng-container *ngTemplateOutlet="tag; context: { $implicit: s }" />
+      @if (!mobile) {
+        <span class="ml-1.5 flex items-center gap-1.5 text-xs text-mute">the <svg [lucideIcon]="icons.search" [size]="14" /> button in the control panel</span>
+      }
+      <ng-container *ngTemplateOutlet="resetBtn; context: { $implicit: s, input: searchInput, label: 'search link' }" />
+    </div>
+    <div class="flex gap-2">
+      <input #searchInput class="inp text-xs" [class.h-12]="mobile" [class.inp-err]="s.refused" id="src-search" type="url"
+        spellcheck="false" autocomplete="off" autocapitalize="off" [value]="s.text" [placeholder]="defaults.search"
+        [attr.aria-invalid]="s.refused" [attr.aria-describedby]="'src-search-msg'"
+        (input)="onInput('search', $event)" (blur)="onBlur('search', $event)" (keydown.enter)="commit('search')" />
+      <ng-container *ngTemplateOutlet="chip; context: { $implicit: 'search', name: 'query', input: searchInput, tall: true }" />
+    </div>
+    <ng-container *ngTemplateOutlet="problems; context: { $implicit: s, input: searchInput }" />
+    @if (!s.problems.length) {
+      <span id="src-search-msg" class="contents">
+        @if (!s.text.trim()) {
+          <ng-container *ngTemplateOutlet="emptyNote; context: { $implicit: 'Empty, so the search button is hidden.' }" />
+        } @else if (s.parts && !mobile) {
+          <span class="font-mono text-xs break-all text-mute">→ <ng-container *ngTemplateOutlet="resolved; context: { $implicit: s.parts }" /></span>
+        }
+      </span>
+    }
+  </section>
+
+  <!-- 3. Chapter link -->
+  @let c = f.chapter;
+  <section class="flex flex-col border-t border-line" [class]="mobile ? 'gap-2 px-4 pt-0 pb-3.5' : 'gap-2.5 pt-5'" aria-labelledby="src-chapter-label">
+    <div class="flex min-h-11 items-center" [class]="mobile ? 'gap-2' : 'gap-2.5'">
+      <label class="dsp" [class]="mobile ? 'mr-auto text-[15px]' : 'text-base'" for="src-chapter" id="src-chapter-label">Chapter link</label>
+      <ng-container *ngTemplateOutlet="tag; context: { $implicit: c }" />
+      @if (!mobile) {
+        <span class="ml-1.5 flex items-center gap-1.5 text-xs text-mute">the <svg [lucideIcon]="icons.externalLink" [size]="14" /> button in the control panel</span>
+      }
+      <ng-container *ngTemplateOutlet="resetBtn; context: { $implicit: c, input: chapterInput, label: 'chapter link' }" />
+    </div>
+    <div class="flex gap-2">
+      <input #chapterInput class="inp text-xs" [class.h-12]="mobile" [class.inp-err]="c.refused" id="src-chapter" type="url"
+        spellcheck="false" autocomplete="off" autocapitalize="off" [value]="c.text" [placeholder]="defaults.chapter"
+        [attr.aria-invalid]="c.refused" [attr.aria-describedby]="'src-chapter-msg'"
+        (input)="onInput('chapter', $event)" (blur)="onBlur('chapter', $event)" (keydown.enter)="commit('chapter')" />
+      @if (!mobile) {
+        @for (n of placeholders.chapter; track n) {
+          <ng-container *ngTemplateOutlet="chip; context: { $implicit: 'chapter', name: n, input: chapterInput, tall: true }" />
+        }
+      }
+    </div>
+    <ng-container *ngTemplateOutlet="problems; context: { $implicit: c, input: chapterInput }" />
+    @if (!c.problems.length) {
+      <span id="src-chapter-msg" class="contents">
+        @if (!c.text.trim()) {
+          <ng-container *ngTemplateOutlet="emptyNote; context: { $implicit: mobile ? 'Empty, so “Open chapter on site” is hidden.' : 'Empty, so the open-on-site button is hidden.' }" />
+        } @else if (c.parts && !mobile) {
+          <span class="font-mono text-xs break-all text-mute">→ <ng-container *ngTemplateOutlet="resolved; context: { $implicit: c.parts }" /></span>
+        }
+      </span>
+    }
+  </section>
+</div>
+
+@if (mobile) {
+  <p class="flex items-center gap-2 border-t border-line px-4 pt-3 pb-[18px] text-xs text-mute">
+    <svg [lucideIcon]="icons.hardDrive" [size]="16" class="shrink-0" />Saved in this browser only.
+  </p>
+} @else {
+  <div class="flex items-center gap-2.5 border-t-2 border-line px-8 py-3.5 text-xs text-dim">
+    <svg [lucideIcon]="icons.hardDrive" [size]="16" class="shrink-0" />
+    <span>Saved in this browser only. Valid changes apply from the next page turn.</span>
+    <button type="button" class="btn btn-ghost ml-auto h-[30px] px-2.5 text-[11px]" [disabled]="!anythingToReset()" (click)="resetAll()">Reset all three</button>
+  </div>
+}

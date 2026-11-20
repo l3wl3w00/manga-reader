@@ -1,6 +1,5 @@
 /** Pure decisions for the page strip: what the slots beside the current page hold, where they sit, and
  *  which pages to load ahead. The neighbours are drawn hidden (no spoilers); see the strip rules in styles.css. */
-import { buildUrl } from '../services/source';
 
 /** page: a hidden neighbour whose image has loaded. skeleton: still loading. teaser: the next chapter, after
  *  the last page. empty: nothing before chapter 1's first page (or a previous chapter of unknown length). */
@@ -19,10 +18,15 @@ export interface Slot {
   action: NeighbourAction | null;
 }
 
+/** A page's image address (SourceService.pageUrl). */
+export type PageUrl = (manga: string, chapter: number, page: number) => string;
+
 export interface StripPlace {
   manga: string;
   chapter: number;
   page: number;
+  /** Makes page addresses from the page template in use. */
+  url: PageUrl;
   /** Pages in this chapter, when known. */
   total: number | null;
   /** Pages in the previous chapter, when known. */
@@ -45,7 +49,7 @@ export const DESKTOP_NEIGHBOUR_MIN = 72;
 export const RAIL_EDGE = 384;
 
 function pageSlot(p: StripPlace, chapter: number, page: number, action: NeighbourAction | null): Slot {
-  const url = buildUrl(p.manga, chapter, page);
+  const url = p.url(p.manga, chapter, page);
   return { kind: p.ready(url) ? 'page' : 'skeleton', key: url, chapter, page, url, action };
 }
 
@@ -67,7 +71,7 @@ export function prevSlot(p: StripPlace): Slot {
  *  empty slot ("No chapter N yet"). */
 export function nextSlot(p: StripPlace): Slot {
   if (p.total && p.page >= p.total) {
-    if (p.missing?.(buildUrl(p.manga, p.chapter + 1, 1))) {
+    if (p.missing?.(p.url(p.manga, p.chapter + 1, 1))) {
       return { kind: 'empty', key: `nonext:${p.manga}:${p.chapter + 1}`, chapter: p.chapter + 1, page: 0, url: null, action: null };
     }
     return { kind: 'teaser', key: `teaser:${p.manga}:${p.chapter + 1}`, chapter: p.chapter + 1, page: 1, url: null, action: 'nextChapter' };
@@ -82,10 +86,10 @@ export const turnsPage = (s: Slot) => s.action === 'prevPage' || s.action === 'n
  *  the end of this one is known (the keys and the bar roll into it). */
 export function preloadTargets(p: Omit<StripPlace, 'ready'>): string[] {
   const out: string[] = [];
-  if (p.total && p.page >= p.total) out.push(buildUrl(p.manga, p.chapter + 1, 1));
-  else out.push(buildUrl(p.manga, p.chapter, p.page + 1));
-  if (p.page > 1) out.push(buildUrl(p.manga, p.chapter, p.page - 1));
-  else if (p.chapter > 1 && p.prevTotal) out.push(buildUrl(p.manga, p.chapter - 1, p.prevTotal));
+  if (p.total && p.page >= p.total) out.push(p.url(p.manga, p.chapter + 1, 1));
+  else out.push(p.url(p.manga, p.chapter, p.page + 1));
+  if (p.page > 1) out.push(p.url(p.manga, p.chapter, p.page - 1));
+  else if (p.chapter > 1 && p.prevTotal) out.push(p.url(p.manga, p.chapter - 1, p.prevTotal));
   return out;
 }
 

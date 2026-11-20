@@ -1,11 +1,12 @@
-import { Injectable, signal, computed, inject } from '@angular/core';
+import { Injectable, signal, computed, inject, effect, untracked } from '@angular/core';
 import { LibraryService } from './library.service';
 import { ZoomService } from './zoom.service';
 import { PageTurnService, TurnDirection } from './page-turn.service';
 import { PreloadService } from './preload.service';
-import { buildUrl } from './source';
+import { SourceService } from './source.service';
 import { preloadTargets } from '../strip/strip';
 
+/** The default template's page address (tests use it; the app goes through SourceService). */
 export { buildUrl } from './source';
 
 /** welcome: nothing loaded. loading: a page is slow to arrive. end: walked past the chapter's last page.
@@ -41,6 +42,8 @@ export class ReaderService {
   private zoom = inject(ZoomService);
   private turn = inject(PageTurnService);
   private preload = inject(PreloadService);
+  private source = inject(SourceService);
+  private readonly url = (manga: string, ch: number, pg: number) => this.source.pageUrl(manga, ch, pg);
 
   readonly manga      = signal('');
   readonly chapter    = signal(1);
@@ -86,6 +89,19 @@ export class ReaderService {
 
   private slowTimer: ReturnType<typeof setTimeout> | undefined;
 
+  constructor() {
+    // A new page template: the page on screen stays (it loaded), its neighbours are fetched from the new
+    // address. Not as a probe: a 404 from a template being tried out must not shorten the chapter in the library.
+    let first = true;
+    effect(() => {
+      this.source.image();
+      if (first) { first = false; return; }
+      const g = untracked(this.lastGood);
+      const s = untracked(this.screen);
+      if (g && (s === 'image' || s === 'end')) untracked(() => this.preloadAround(g, false));
+    });
+  }
+
   /** Starts loading a page. Returns false when nothing happens (busy, or no manga). A page fetched ahead shows
    *  at once; a strip turn onto one still loading slides its skeleton in now and sharpens it when it arrives. */
   load(manga: string, ch: number, pg: number, opts: LoadOptions = {}): boolean {
@@ -98,7 +114,7 @@ export class ReaderService {
     this.totalPages.set(this.lib.chapterLength(manga, ch));
     clearTimeout(this.slowTimer);
 
-    const url = buildUrl(manga, ch, pg);
+    const url = this.url(manga, ch, pg);
     const ready = this.preload.get(url);
     if (ready) { this.show(spot, url, ready, dir, newManga); return true; }
 
@@ -160,24 +176,24 @@ export class ReaderService {
   }
 
   /** Fetches the strip's neighbours ahead, so turns are instant. */
-  private preloadAround(spot: Spot) {
+  private preloadAround(spot: Spot, probe = true) {
     const { manga, chapter, page } = spot;
     const total = this.totalPages();
-    const place = { manga, chapter, page, total, prevTotal: chapter > 1 ? this.lib.chapterLength(manga, chapter - 1) : null };
+    const place = { manga, chapter, page, total, url: this.url, prevTotal: chapter > 1 ? this.lib.chapterLength(manga, chapter - 1) : null };
     const [ahead, ...rest] = preloadTargets(place);
-    if (ahead === buildUrl(manga, chapter, page + 1)) this.probeNext(manga, chapter, page);
+    if (probe && ahead === this.url(manga, chapter, page + 1)) this.probeNext(manga, chapter, page);
     else this.preload.load(ahead);
     rest.forEach(url => this.preload.load(url));
   }
 
   /** Loads the next page ahead; a 404 there means this page is the chapter's last. */
   private probeNext(manga: string, ch: number, pg: number) {
-    this.preload.load(buildUrl(manga, ch, pg + 1), () => {
+    this.preload.load(this.url(manga, ch, pg + 1), () => {
       this.lib.saveChapterLength(manga, ch, pg);
       if (this.manga() === manga && this.chapter() === ch) {
         this.totalPages.set(pg);
         // The end is known now: warm up the next chapter for the keys and the bar.
-        this.preload.load(buildUrl(manga, ch + 1, 1));
+        this.preload.load(this.url(manga, ch + 1, 1));
       }
     });
   }

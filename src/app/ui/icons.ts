@@ -1,8 +1,8 @@
 import type { LucideIconData } from '@lucide/angular';
 import {
-  ArrowRight, Check, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ExternalLink, Hand, Keyboard,
-  Library, Minus, Pencil, Pin, PinOff, Plus, Pointer, RotateCcw, Scan, Search, Settings, Star, Trash2,
-  TriangleAlert, X, ZoomIn,
+  ArrowRight, Check, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, CircleCheck, CircleX, ExternalLink,
+  EyeOff, Hand, HardDrive, Keyboard, Library, Minus, Pencil, Pin, PinOff, Play, Plus, Pointer, RotateCcw, Scan,
+  Search, Settings, Star, Trash2, TriangleAlert, X, ZoomIn,
 } from 'lucide';
 import type { IconNode } from 'lucide';
 
@@ -18,14 +18,19 @@ export const ICONS = {
   chevronRight: icon('chevron-right', ChevronRight),
   chevronsLeft: icon('chevrons-left', ChevronsLeft),
   chevronsRight: icon('chevrons-right', ChevronsRight),
+  circleCheck: icon('circle-check', CircleCheck),
+  circleX: icon('circle-x', CircleX),
   externalLink: icon('external-link', ExternalLink),
+  eyeOff: icon('eye-off', EyeOff),
   hand: icon('hand', Hand),
+  hardDrive: icon('hard-drive', HardDrive),
   keyboard: icon('keyboard', Keyboard),
   library: icon('library', Library),
   minus: icon('minus', Minus),
   pencil: icon('pencil', Pencil),
   pin: icon('pin', Pin),
   pinOff: icon('pin-off', PinOff),
+  play: icon('play', Play),
   plus: icon('plus', Plus),
   pointer: icon('pointer', Pointer),
   reset: icon('rotate-ccw', RotateCcw),
