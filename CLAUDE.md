@@ -25,9 +25,10 @@ Design: "Ink & Screentone" (dark manga-print brutalism). Tokens are Tailwind 4 `
 (`bg-ink`, `text-paper`, `border-line`, `bg-shu`, `text-gold`, `font-display`, `shadow-hard`, `ease-spring`...; the
 stock Tailwind palette is switched off). `styles.css` also holds the design-system primitives (`.btn`, `.ib`, `.inp`,
 `.stp`, `.tgl`, `.key`, `.tag`, `.tab`, `.pnl`, `.nav-btn`), the `halftone`/`hatch` textures, every keyframe and
-`a-*` motion class used by `animate.enter`/`animate.leave`, the View Transition page-turn rules, and the
+`a-*` motion class used by `animate.enter`/`animate.leave`, the View Transition fade for jumps, and the
 reduced-motion fallbacks under `html[data-motion="reduced"]` (never `@media (prefers-reduced-motion)`: `MotionService`
-decides, so the in-app setting can override the system). Fonts come from Google Fonts (`src/index.html`); icons are Lucide
+decides, so the in-app setting can override the system), the page-strip rules (`.strip`, `.slot`, `.veil`, `.nb-*`)
+and the backdrop rules (`.bd`, `.bd-drift`). Fonts come from Google Fonts (`src/index.html`); icons are Lucide
 (`lucide-angular`, listed in `ui/icons.ts`). Overlays whose host is removed by the parent (sheets, settings, end card)
 put `animate.leave: 'x-leave'` on the host and `data-leave` on their parts.
 
@@ -36,16 +37,38 @@ put `animate.leave: 'x-leave'` on the host and `data-leave` on their parts.
 
 **Services** (`src/app/services/`):
 - `ReaderService` — state signals (`manga`, `chapter`, `page`, `totalPages`, `busy`, `screen`, `imgSrc`, `lastGood`,
-  `missed`), `load()`, navigation. Probes image URLs with `Image` objects; `onerror` = 404. Screens: `welcome`,
-  `loading` (only after 180 ms), `image`, `end` (a 404 right after the chapter's last page, see `classifyMiss`),
-  `not-found` (page 1, a missing chapter or a misspelt manga). Page turns run through `PageTurnService`.
-  Captions and counters read `shown` (the page on screen), so they change with the image, not before it.
-- `PageTurnService` — wraps a page change in `document.startViewTransition` with a direction (`data-turn` on
-  `<html>`); instant swap where unsupported.
+  `missed`), `load()` (returns whether a turn started), navigation. Probes image URLs with `Image` objects; `onerror` =
+  404. A page `PreloadService` already holds shows at once (no probe). Screens: `welcome`, `loading` (after 180 ms; at
+  once for a strip turn onto a page still loading: its skeleton slides in, then it `arrive`s), `image`, `end` (a 404
+  right after the chapter's last page, see `classifyMiss`), `not-found` (page 1, a missing chapter or a misspelt
+  manga). After each page it fetches the neighbours ahead (`preloadAround`, `probeNext`: a 404 there is the chapter's
+  length; at a known last page the next chapter's page 1). Captions and counters read `shown` and `shownTotal` (the
+  page on screen and its chapter's length), so they change with the page, not before it. `buildUrl` lives in
+  `source.ts`.
+- `PageTurnService` — runs a page change: `next`/`prev`/`arrive` through the page strip's animator (the reader
+  registers it with `attach`: `before`, update, `after`; `settle` ends a running turn at once), `jump` in a View
+  Transition fade (`data-turn` on `<html>`), `none` instantly.
+- `PreloadService` — decoded pages fetched ahead (the strip's neighbours and the page on screen), at most 10, and the
+  addresses that 404'd ahead (`missing`: a next chapter that is not out yet).
+- `StripService` — the page strip: `prev` / `next` slots (decisions in `strip/strip.ts`: page, skeleton, teaser,
+  empty), placed `items` (offset, page rect and `box`: the current page's frame or the neighbour's page; a page leaving
+  during a turn too), the turn's `ghostKey` /
+  `leaving`, and the mobile swipe (`drag`, `release`, `cancel`, `dragX`, `armedKey`; decisions in
+  `gestures/gestures.ts`: `swipeSnap`, `isArmed`, `dragOffset`).
+- `AppearanceService` — backdrop (`solid` with Ink…Slate or a custom colour; `drift` with Dusk/Tide/Ember/Moss or
+  custom colours; custom colours go through `clampDark`, so the page always stands out) and the neighbour pages'
+  see-through (`opaque`, `25`, `50`).
 - `LibraryService` — localStorage library (`manga-reader-library`), per-chapter page positions, favourites,
   `listing` (Favourites / Recent), `relativeTime`, `normalizeEntry` (tolerates old entries without `updatedAt`).
-- `ZoomService` + `zoom-math.ts` — zoom/pan signals, zoom toward a point, drag, pinch, auto-fit (`fitView`), minimap
-  region (`visibleRegion`).
+- `ZoomService` + `zoom-math.ts` — the current page zooms and pans inside a frame (its strip slot): at 100% the frame
+  is the page; zooming grows it (`frameAt`) up to `maxW` (`maxFrameWidth`), which keeps `DESKTOP_NEIGHBOUR_MIN` (72 px)
+  of each neighbour on screen on desktop (from the rail's edge while the panels are locked) and the 14 px slivers on
+  mobile (where the frame only grows taller). Pan clamps to the frame (`clampPan`); zoom toward a point
+  (`zoomAround`), drag, pinch, auto-fit (`fitView`: max width % also capped by the frame), minimap region
+  (`visibleRegion`: the part of the page in the frame). Coordinates are the strip's: pointer positions have
+  `railOffset` taken off. `inset`: on mobile the page sits 20 px in from each side at 100%. `railOffset`
+  (`clearRailOffset`): with the panels locked the strip re-centres right of the rail, at any zoom. ZoomService reads
+  `UiService` lazily (through `Injector`): UiService reaches it through ReaderService.
 - `KeybindingsService` — presets, renaming, recording (`recordKey`), `actionFor` (match order `ACTION_PRIORITY`),
   `conflicts` (`findConflicts`, same order), `basePreset`.
 - `UiService` — `panelsLocked` / `peeking` / `showPanels`, `settingsOpen`, mobile `sheet` ('jump' | 'library').
@@ -54,26 +77,51 @@ put `animate.leave: 'x-leave'` on the host and `data-leave` on their parts.
   reports reduced motion whenever the desktop's animations are off (KDE at "Instant"), hence the override.
 
 **Components** (`src/app/components/`, shared or desktop):
-- `ReaderComponent` — page image in the zoom root (`.vt-page`), skeleton while loading; desktop wheel zoom and drag-pan.
-- `ClickZonesComponent` — desktop 28/44/28 zones with hover hints.
+- `ReaderComponent` — the page strip (`.vt-page`): pages in one line, only the current one sharp and interactive (zoom
+  and pan apply to it alone). **No spoilers:** a neighbour shows overall tone only. `TinyPageDirective`
+  (`ui/tiny-page.directive.ts`) draws it from a copy 20 px wide (about 1/32), blurred by an eighth of the page, its
+  luminance squeezed into a narrow band toward grey and darkened, scaled up under an ink wash and halftone screen
+  (`.veil`). Nothing lifts that on hover (only the hint and an outline show). Check any change to it with the
+  review driver's stress page (`tmp/strip-review/tools/cdp.mjs`: Kaiju Postal Service pages carry a face, a "NO!"
+  balloon and a huge page number) at 2x and squinted. Slots: the next one after the last page is a next-chapter
+  teaser (or an inert "No chapter N yet" once its page 1 404'd ahead); the one before page 1 is the previous
+  chapter's last page or empty (both inert: clicks on them do nothing); a page still loading is the screentone
+  skeleton. Teaser and loading card take a narrow form when under 150 px of them shows. Runs the turn: strip slides
+  320 ms; outgoing page obscures in 80 ms; the incoming page shows the same tone-only drawing until 55%, then
+  crossfades to the real page (never a blurred full image); captions and counters stay on the outgoing page until
+  then (`ReaderService.captionHold`); reduced motion: jump + 120 ms fade; a new turn jumps a running one to its end.
+  Desktop: clicking a neighbour turns the page (page only; the teaser goes to the next chapter) with a hover hint in
+  its visible part; clicking the page locks or unlocks the panels; wheel zoom and drag-pan. A click only counts where
+  the press began and if the mouse stayed put: a pan, or a press on a neighbour let go elsewhere, does nothing.
+  Zoomed in, the neighbours stay in view beside the frame (they move out as it grows) and stay clickable; their hover
+  hint shrinks to a chevron when only a strip of them shows.
 - `ControlPanelComponent` (header with the pin) + `JumpFormComponent` (manga/chapter/page; also the mobile welcome
   form and Jump sheet), `LibraryPanelComponent` + `LibraryEntryComponent`, `BottomBarComponent`.
 - `HudComponent` — folio, key hints, `ZoomChipComponent`, `MinimapComponent`, zoom hints, progress rule. The caption
   and key hints only show when they fit the dark gutter beside the page (`hud/gutter-fit.ts`). Below 1280 px with the
-  panels up, the zoom chip sits in the rail instead.
+  panels up, the zoom chip sits in the rail instead. Zoomed in, the minimap, zoom chip and pan hint sit 16 px inside
+  the page's frame (`inFrame`), never over a neighbour strip; with the bottom bar up the chip sits above it. The
+  desktop bottom bar centres on the page (its frame when zoomed), kept clear of the rail and the window edge.
 - `WelcomeComponent`, `NotFoundComponent`, `LoadingCardComponent`, `EndOfChapterComponent` (both layouts).
-- `SettingsComponent` — dialog (desktop) or full screen (mobile) with `KeybindingsTabComponent`, `ZoomTabComponent`,
-  `MotionTabComponent`, `GesturesTabComponent` (mobile; Keybindings shows there too when a fine pointer exists).
+- `SettingsComponent` — dialog (desktop: Keybindings / Zoom / Appearance) or full screen (mobile: Controls / Zoom /
+  Appearance) with `KeybindingsTabComponent`, `ZoomTabComponent`, `AppearanceTabComponent` (backdrop, neighbour
+  pages, live preview, and `MotionTabComponent` as its Motion section), `ControlsTabComponent` (mobile: the gestures,
+  and a Keybindings row opening `KeybindingsTabComponent` when a fine pointer exists).
   It is modal: the layouts make everything else `inert` while it is open, Tab wraps inside it (`ui/focus-trap.ts`),
   focus starts on the active tab and returns to the opener.
 
-**Mobile** (`src/app/mobile/`): `GestureLayerComponent` (tap zones, swipes, double-tap, long-press peek, pinch, pan;
-decisions in `gestures/gestures.ts`), `MobileTopBarComponent`, `MobileNavComponent` + `PageScrubberComponent`,
+- `BackdropComponent` (`ui/backdrop/`) — behind everything (in `App`): nothing for Ink (the dotted ground), a flat
+  colour, or Drift (two pseudo-element dot fields on a 90 s loop, still under reduced motion). Panels stay ink.
+
+**Mobile** (`src/app/mobile/`): `GestureLayerComponent` (a tap anywhere shows or hides the controls and never turns
+the page; a sideways swipe at 100% drags the strip and snaps past 40% of a page or on a flick, else springs back;
+double-tap, long-press peek, pinch, pan; decisions in `gestures/gestures.ts`), `SwipeCueComponent` (mid-swipe cue), `MobileTopBarComponent`, `MobileNavComponent` + `PageScrubberComponent`,
 `MobileHeaderComponent`, `LibrarySheetComponent` (swipe rows, remove sheet). `ui/` holds `SheetComponent` (bottom
 sheet, drag to dismiss), `CoverComponent`, `PageArtComponent`.
 
 **Two navigation modes** (preserved from original):
-- Click zones, taps and swipes: page-only, never cross a chapter (past the last page: the end-of-chapter card).
+- Neighbour clicks and swipes: page-only, never cross a chapter (a swipe past the last page: the end-of-chapter card).
+  The one exception: clicking the next-chapter teaser after the last page.
 - Buttons and keybindings: advance chapter at chapter boundaries.
 
 **Persistence** (all `localStorage`):
@@ -84,8 +132,12 @@ sheet, drag to dismiss), `CoverComponent`, `PageArtComponent`.
 - `manga-reader-autozoom`, `manga-reader-fitzoom`: auto-fit zoom toggle + settings.
 - `manga-reader-motion`: `'full'` or `'reduced'`; absent = follow the system.
 - `manga-reader-pan-hint-dismissed`: `'1'` once the "drag to pan" hint shown while zoomed was closed.
+- `manga-reader-backdrop`: JSON `{ mode, solid, solidCustom, drift, driftCustom }` (see `normalizeBackdrop`); absent =
+  Solid Ink.
+- `manga-reader-neighbours`: `'25'` or `'50'` (% of backdrop through the hidden neighbours); absent = opaque.
 
 **Keybinding presets**: Default, WASD, Eating — stored in `KeybindingsService.PRESETS`.
 
 **Tests**: `ng test` (vitest, jsdom). `src/test-setup.ts` swaps in an in-memory `localStorage`, because Node 25's own
-one shadows jsdom's.
+one shadows jsdom's, and stubs canvas `getContext` (jsdom has none). jsdom has no `PointerEvent`: the gesture spec
+dispatches mouse events carrying a `pointerId`.

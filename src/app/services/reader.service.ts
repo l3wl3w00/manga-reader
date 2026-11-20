@@ -2,6 +2,11 @@ import { Injectable, signal, computed, inject } from '@angular/core';
 import { LibraryService } from './library.service';
 import { ZoomService } from './zoom.service';
 import { PageTurnService, TurnDirection } from './page-turn.service';
+import { PreloadService } from './preload.service';
+import { buildUrl } from './source';
+import { preloadTargets } from '../strip/strip';
+
+export { buildUrl } from './source';
 
 /** welcome: nothing loaded. loading: a page is slow to arrive. end: walked past the chapter's last page.
  *  not-found: the manga, chapter or first page does not exist. */
@@ -24,10 +29,6 @@ export function classifyMiss(miss: Spot, lastGood: Spot | null, knownLength: num
   return miss.page === lastGood!.page + 1 ? 'end' : 'not-found';
 }
 
-export function buildUrl(manga: string, ch: number, pg: number) {
-  return `https://images.mangafreak.me/mangas/${manga}/${manga}_${ch}/${manga}_${ch}_${pg}.jpg`;
-}
-
 interface LoadOptions {
   /** Called instead of showing a miss (buttons and keys use it to roll into the next chapter). */
   onFail?: (() => void) | null;
@@ -39,6 +40,7 @@ export class ReaderService {
   private lib = inject(LibraryService);
   private zoom = inject(ZoomService);
   private turn = inject(PageTurnService);
+  private preload = inject(PreloadService);
 
   readonly manga      = signal('');
   readonly chapter    = signal(1);
@@ -53,17 +55,28 @@ export class ReaderService {
   readonly missed     = signal<Spot | null>(null);
 
 
+  /** During a strip turn, the outgoing page until the incoming one starts to show (the reader sets and clears it). */
+  readonly captionHold = signal<{ chapter: number; page: number } | null>(null);
+
   /** The place on screen: the incoming page while its skeleton shows, otherwise the last page that loaded.
-   *  Captions read this, so they change together with the image (inside the page-turn transition). */
+   *  Captions and counters read this, so they change together with the image, not before it. */
   readonly shown = computed(() => {
+    const hold = this.captionHold();
+    if (hold) return hold;
     const g = this.lastGood();
     return this.screen() === 'loading' || !g || g.manga !== this.manga()
       ? { chapter: this.chapter(), page: this.page() }
       : { chapter: g.chapter, page: g.page };
   });
+  /** Length of the chapter on screen: during a turn into another chapter the counters keep the old chapter's
+   *  length until its page leaves, so they change together with the page. */
+  readonly shownTotal = computed(() => {
+    const ch = this.shown().chapter;
+    return ch === this.chapter() ? this.totalPages() : this.lengthOf(this.manga(), ch);
+  });
   /** How far through the chapter the page on screen is, in %. */
   readonly progress = computed(() => {
-    const tp = this.totalPages();
+    const tp = this.shownTotal();
     return tp ? Math.min(100, (this.shown().page / tp) * 100) : 0;
   });
   readonly atLastPage = computed(() => {
@@ -73,41 +86,57 @@ export class ReaderService {
 
   private slowTimer: ReturnType<typeof setTimeout> | undefined;
 
-  load(manga: string, ch: number, pg: number, opts: LoadOptions = {}) {
-    if (this.busy()) return;
-    if (!manga) { this.screen.set('welcome'); return; }
+  /** Starts loading a page. Returns false when nothing happens (busy, or no manga). A page fetched ahead shows
+   *  at once; a strip turn onto one still loading slides its skeleton in now and sharpens it when it arrives. */
+  load(manga: string, ch: number, pg: number, opts: LoadOptions = {}): boolean {
+    if (this.busy()) return false;
+    if (!manga) { this.screen.set('welcome'); return false; }
+    const dir = opts.dir ?? 'jump';
     const newManga = manga !== this.lastGood()?.manga;
-    this.busy.set(true);
+    const spot: Spot = { manga, chapter: ch, page: pg };
     this.manga.set(manga); this.chapter.set(ch); this.page.set(pg);
     this.totalPages.set(this.lib.chapterLength(manga, ch));
     clearTimeout(this.slowTimer);
-    this.slowTimer = setTimeout(() => { if (this.busy()) this.screen.set('loading'); }, SLOW_LOAD_MS);
 
     const url = buildUrl(manga, ch, pg);
+    const ready = this.preload.get(url);
+    if (ready) { this.show(spot, url, ready, dir, newManga); return true; }
+
+    this.busy.set(true);
+    const slide = !newManga && (dir === 'next' || dir === 'prev');
+    if (slide) this.turn.run(dir, () => this.screen.set('loading'));
+    else this.slowTimer = setTimeout(() => { if (this.busy()) this.screen.set('loading'); }, SLOW_LOAD_MS);
+
     const probe = new Image();
     probe.referrerPolicy = 'no-referrer';
     probe.onload = async () => {
-      // Decode first, so the view transition snapshots a painted page, not a blank one.
+      // Decode first, so the turn shows a painted page, not a blank one.
       try { await probe.decode?.(); } catch { /* still shows */ }
       this.settle();
-      this.turn.run(opts.dir ?? 'jump', () => {
-        this.imgSrc.set(url);
-        this.screen.set('image');
-        this.missed.set(null);
-        this.lastGood.set({ manga, chapter: ch, page: pg });
-        this.zoom.imageSize.set({ w: probe.naturalWidth, h: probe.naturalHeight });
-        if (this.zoom.autoFit()) this.zoom.autoFitZoom(probe.naturalWidth, probe.naturalHeight);
-        else if (newManga) this.zoom.resetZoom();
-      });
-      this.lib.saveProgress(manga, ch, pg);
-      this.probeNext(manga, ch, pg);
+      this.preload.add(url, probe);
+      this.show(spot, url, probe, slide ? 'arrive' : dir, newManga);
     };
     probe.onerror = () => {
       this.settle();
       if (opts.onFail) { opts.onFail(); return; }
-      this.showMiss({ manga, chapter: ch, page: pg });
+      this.showMiss(spot);
     };
     probe.src = url;
+    return true;
+  }
+
+  private show(spot: Spot, url: string, img: HTMLImageElement, dir: TurnDirection, newManga: boolean) {
+    this.turn.run(dir, () => {
+      this.imgSrc.set(url);
+      this.screen.set('image');
+      this.missed.set(null);
+      this.lastGood.set(spot);
+      this.zoom.imageSize.set({ w: img.naturalWidth, h: img.naturalHeight });
+      if (this.zoom.autoFit()) this.zoom.autoFitZoom(img.naturalWidth, img.naturalHeight);
+      else if (newManga) this.zoom.resetZoom();
+    });
+    this.lib.saveProgress(spot.manga, spot.chapter, spot.page);
+    this.preloadAround(spot);
   }
 
   private settle() {
@@ -130,26 +159,41 @@ export class ReaderService {
     }
   }
 
-  private probeNext(manga: string, ch: number, pg: number) {
-    const t = new Image();
-    t.referrerPolicy = 'no-referrer';
-    t.onerror = () => {
-      if (this.manga() === manga && this.chapter() === ch && this.page() === pg) {
-        this.totalPages.set(pg);
-        this.lib.saveChapterLength(manga, ch, pg);
-      }
-    };
-    t.src = buildUrl(manga, ch, pg + 1);
+  /** Fetches the strip's neighbours ahead, so turns are instant. */
+  private preloadAround(spot: Spot) {
+    const { manga, chapter, page } = spot;
+    const total = this.totalPages();
+    const place = { manga, chapter, page, total, prevTotal: chapter > 1 ? this.lib.chapterLength(manga, chapter - 1) : null };
+    const [ahead, ...rest] = preloadTargets(place);
+    if (ahead === buildUrl(manga, chapter, page + 1)) this.probeNext(manga, chapter, page);
+    else this.preload.load(ahead);
+    rest.forEach(url => this.preload.load(url));
   }
 
-  /** Click zones, taps and swipes: page only, never into another chapter. */
-  nextPage() {
-    if (!this.manga() || this.busy()) return;
-    this.load(this.manga(), this.chapter(), this.page() + 1, { onFail: null, dir: 'next' });
+  /** Loads the next page ahead; a 404 there means this page is the chapter's last. */
+  private probeNext(manga: string, ch: number, pg: number) {
+    this.preload.load(buildUrl(manga, ch, pg + 1), () => {
+      this.lib.saveChapterLength(manga, ch, pg);
+      if (this.manga() === manga && this.chapter() === ch) {
+        this.totalPages.set(pg);
+        // The end is known now: warm up the next chapter for the keys and the bar.
+        this.preload.load(buildUrl(manga, ch + 1, 1));
+      }
+    });
   }
-  prevPage() {
-    if (!this.manga() || this.busy()) return;
-    if (this.page() > 1) this.load(this.manga(), this.chapter(), this.page() - 1, { dir: 'prev' });
+
+  private lengthOf(manga: string, ch: number): number | null {
+    return this.lib.entries().find(e => e.slug === manga)?.chapterPages?.[ch] ?? null;
+  }
+
+  /** Neighbour clicks and swipes: page only, never into another chapter. True when a turn started. */
+  nextPage(): boolean {
+    if (!this.manga() || this.busy()) return false;
+    return this.load(this.manga(), this.chapter(), this.page() + 1, { onFail: null, dir: 'next' });
+  }
+  prevPage(): boolean {
+    if (!this.manga() || this.busy() || this.page() <= 1) return false;
+    return this.load(this.manga(), this.chapter(), this.page() - 1, { dir: 'prev' });
   }
 
   /** Buttons and keys: roll into the next chapter at the end. */

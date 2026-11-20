@@ -23,7 +23,7 @@ import { ICONS } from '../../ui/icons';
         <h1 class="dsp" [class]="mobile ? 'text-4xl' : 'text-display-lg'">End of<br />chapter {{ reader.chapter() }}</h1>
         <p class="leading-normal text-dim" [class]="mobile ? 'text-[15px]' : 'text-base'">
           That was page {{ reader.totalPages() }}, the last one.
-          {{ mobile ? 'Taps and swipes only turn pages, so they stop here.' : 'Clicking the edge of the screen only turns pages, so it stops here.' }}
+          {{ mobile ? 'Swipes only turn pages, so they stop here.' : 'Clicking a neighbouring page only turns pages, so it stops here.' }}
         </p>
         <div class="flex gap-3.5 pt-1.5" [class.flex-col]="mobile">
           <button class="btn btn-primary btn-lg" [class.flex-1]="!mobile" [class.mr-1]="mobile" (click)="reader.nextChapter()">

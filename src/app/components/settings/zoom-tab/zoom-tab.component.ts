@@ -4,7 +4,7 @@ import { LucideAngularModule } from 'lucide-angular';
 import { ZoomService } from '../../../services/zoom.service';
 import { KeybindingsService } from '../../../services/keybindings.service';
 import { LayoutService } from '../../../services/layout.service';
-import { TYPICAL_PAGE, containRect, fitView } from '../../../services/zoom-math';
+import { TYPICAL_PAGE, containRect } from '../../../services/zoom-math';
 import { PageArtComponent } from '../../../ui/page-art/page-art.component';
 import { ICONS } from '../../../ui/icons';
 
@@ -44,8 +44,9 @@ export class ZoomTabComponent {
   protected readonly preview = computed(() => {
     const vp = this.viewport(), fs = this.zoom.fitSettings();
     const img = this.zoom.imageSize() ?? TYPICAL_PAGE;
-    const view = fitView(vp, img, fs);
-    const r = containRect(vp, img);
+    // The same framing a page turn gets: the width is also capped so the neighbour strips stay in view.
+    const view = { zoom: this.zoom.fitZoomFor(img) };
+    const r = containRect(vp, img, this.zoom.inset());
     const frameW = this.layout.mobile() ? 150 : 400;
     const s = frameW / vp.w;
     const pageW = r.w * view.zoom * s;

@@ -13,3 +13,6 @@ class MemoryStorage implements Storage {
 for (const name of ['localStorage', 'sessionStorage'] as const) {
   Object.defineProperty(globalThis, name, { value: new MemoryStorage(), configurable: true, writable: true });
 }
+
+// jsdom has no canvas: the strip's neighbour drawings are skipped (and jsdom stops logging "not implemented").
+HTMLCanvasElement.prototype.getContext = (() => null) as typeof HTMLCanvasElement.prototype.getContext;

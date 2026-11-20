@@ -1,26 +1,25 @@
 import { Component, DestroyRef, inject } from '@angular/core';
-import { ReaderService } from '../../services/reader.service';
 import { UiService } from '../../services/ui.service';
 import { ZoomService, DragStart } from '../../services/zoom.service';
+import { StripService } from '../../services/strip.service';
 import { View } from '../../services/zoom-math';
-import {
-  DOUBLE_TAP_MS, LONG_PRESS_MS, TAP_SLOP, Zone, classifyStroke, isDoubleTap, swipeAction, tapZone,
-} from '../../gestures/gestures';
+import { DOUBLE_TAP_MS, LONG_PRESS_MS, TAP_SLOP, flickVelocity, isDoubleTap, isTap, swipeAxis } from '../../gestures/gestures';
 
 /** Zoom a double-tap at 100% goes to, around the tapped point. */
 const DOUBLE_TAP_ZOOM = 2.2;
 
 type Point = { x: number; y: number };
 
-/** Touch reading surface (mobile layout). Invisible 28/44/28 tap zones and swipes turn pages only;
- *  pinch zooms, drag pans while zoomed, double-tap fits or zooms in, long-press peeks the controls. */
+/** Touch reading surface (mobile layout). A tap never turns the page: one tap anywhere shows or hides the
+ *  controls. Only a horizontal swipe at 100% turns it, dragging the page strip with the finger (page only).
+ *  Pinch zooms, drag pans while zoomed, double-tap fits or zooms in, long-press peeks the controls. */
 @Component({
   selector: 'app-gesture-layer',
   host: {
     class: 'fixed inset-0 z-10 block touch-none select-none [-webkit-touch-callout:none]',
     'data-stage': '',
     role: 'application',
-    'aria-label': 'Page. Tap the left or right edge to turn pages, the middle for controls.',
+    'aria-label': 'Page. Swipe sideways to turn pages; tap to show or hide the controls.',
     '(pointerdown)': 'down($event)',
     '(pointermove)': 'move($event)',
     '(pointerup)': 'up($event)',
@@ -30,13 +29,16 @@ type Point = { x: number; y: number };
   template: '',
 })
 export class GestureLayerComponent {
-  private reader = inject(ReaderService);
   private ui = inject(UiService);
   private zoom = inject(ZoomService);
+  private strip = inject(StripService);
 
   private pointers = new Map<number, Point>();
   private stroke: (Point & { t: number }) | null = null;
   private moved = false;
+  /** This stroke drags the strip sideways (decided once it leaves the tap slop). */
+  private swiping = false;
+  private samples: { x: number; t: number }[] = [];
   private pan: DragStart | null = null;
   private pinch: { view: View; mid: Point; dist: number } | null = null;
   private longPress: ReturnType<typeof setTimeout> | undefined;
@@ -49,11 +51,13 @@ export class GestureLayerComponent {
   }
 
   protected down(e: PointerEvent) {
-    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
     this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (this.pointers.size === 1) {
       this.stroke = { x: e.clientX, y: e.clientY, t: e.timeStamp };
       this.moved = false;
+      this.swiping = false;
+      this.samples = [{ x: e.clientX, t: e.timeStamp }];
       this.longPressed = false;
       this.pan = this.zoom.isZoomed() ? this.zoom.startDrag(e.clientX, e.clientY) : null;
       clearTimeout(this.longPress);
@@ -66,6 +70,7 @@ export class GestureLayerComponent {
     } else if (this.pointers.size === 2) {
       clearTimeout(this.longPress);
       this.stroke = null;
+      this.endSwipe();
       this.endPan();
       const [a, b] = [...this.pointers.values()];
       this.pinch = { view: this.zoom.snapshot(), mid: mid(a, b), dist: Math.max(1, dist(a, b)) };
@@ -81,11 +86,17 @@ export class GestureLayerComponent {
       return;
     }
     if (!this.stroke) return;
-    if (!this.moved && Math.hypot(e.clientX - this.stroke.x, e.clientY - this.stroke.y) > TAP_SLOP) {
+    const dx = e.clientX - this.stroke.x, dy = e.clientY - this.stroke.y;
+    if (!this.moved && Math.hypot(dx, dy) > TAP_SLOP) {
       this.moved = true;
       clearTimeout(this.longPress);
+      // Only at 100%: zoomed in, a drag pans.
+      this.swiping = !this.pan && !this.longPressed && swipeAxis(dx, dy) === 'x';
     }
+    this.samples.push({ x: e.clientX, t: e.timeStamp });
+    if (this.samples.length > 6) this.samples.shift();
     if (this.pan) this.zoom.doDrag(this.pan, e.clientX, e.clientY);
+    else if (this.swiping) this.strip.drag(dx);
   }
 
   protected up(e: PointerEvent) {
@@ -101,13 +112,14 @@ export class GestureLayerComponent {
     this.stroke = null;
     this.endPan();
     if (!s) return;
-    if (this.longPressed) { this.ui.peeking.set(false); return; }
-
-    const kind = classifyStroke({ dx: e.clientX - s.x, dy: e.clientY - s.y, ms: e.timeStamp - s.t }, this.zoom.isZoomed());
-    if (kind === 'tap') { this.tap(e.clientX, e.clientY, e.timeStamp); return; }
-    const turn = swipeAction(kind);
-    if (turn === 'next') this.reader.nextPage();
-    else if (turn === 'prev') this.reader.prevPage();
+    if (this.longPressed) { this.ui.peeking.set(false); this.endSwipe(); return; }
+    if (this.swiping) {
+      this.swiping = false;
+      this.samples.push({ x: e.clientX, t: e.timeStamp });
+      this.strip.release(e.clientX - s.x, flickVelocity(this.samples));
+      return;
+    }
+    if (isTap({ dx: e.clientX - s.x, dy: e.clientY - s.y, ms: e.timeStamp - s.t })) this.tap(e.clientX, e.clientY, e.timeStamp);
   }
 
   protected reset() {
@@ -116,13 +128,13 @@ export class GestureLayerComponent {
     this.stroke = null;
     this.pinch = null;
     this.endPan();
+    this.endSwipe();
     if (this.longPressed) this.ui.peeking.set(false);
   }
 
-  /** Edge taps at 100% act at once, so page turns never wait. Other taps wait briefly for a second tap. */
+  /** Every tap means the same, wherever it lands: show or hide the controls. It waits briefly in case a second
+   *  tap makes it a double-tap (zoom). */
   private tap(x: number, y: number, t: number) {
-    const zone = tapZone(x, window.innerWidth);
-    if (!this.zoom.isZoomed() && zone !== 'center') { this.lastTap = null; this.act(zone); return; }
     if (isDoubleTap(this.lastTap, x, y, t)) {
       clearTimeout(this.pendingTap);
       this.lastTap = null;
@@ -132,13 +144,11 @@ export class GestureLayerComponent {
     }
     this.lastTap = { x, y, t };
     clearTimeout(this.pendingTap);
-    this.pendingTap = setTimeout(() => { this.lastTap = null; this.act(zone); }, DOUBLE_TAP_MS);
+    this.pendingTap = setTimeout(() => { this.lastTap = null; this.ui.togglePanels(); }, DOUBLE_TAP_MS);
   }
 
-  private act(zone: Zone) {
-    if (zone === 'prev') this.reader.prevPage();
-    else if (zone === 'next') this.reader.nextPage();
-    else this.ui.togglePanels();
+  private endSwipe() {
+    if (this.swiping) { this.swiping = false; this.strip.cancel(); }
   }
 
   private endPan() {

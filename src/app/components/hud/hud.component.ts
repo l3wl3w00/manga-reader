@@ -38,7 +38,7 @@ export class HudComponent {
   });
   protected readonly title = computed(() => this.lib.formatName(this.reader.manga()));
   protected readonly place = computed(() => {
-    const tp = this.reader.totalPages();
+    const tp = this.reader.shownTotal();
     return `${pad2(this.reader.shown().page)}${tp ? ' / ' + tp : ''}`;
   });
   /** Dark space left of the page at 100% with the panels away (desktop). */
@@ -48,6 +48,12 @@ export class HudComponent {
     `${this.title()} · CH ${this.reader.shown().chapter} · ${this.place()}`, `CH ${this.reader.shown().chapter} · ${this.place()}`));
   protected readonly hintsFit = computed(() =>
     fits(keyHintsWidth(this.kb.keyFor('peekPanels'), this.kb.keyFor('togglePanels')), this.gutter()));
+
+  /** Desktop, zoomed: where overlays go to sit 16px inside the current page's frame, in window coordinates. */
+  protected readonly inFrame = computed(() => {
+    const f = this.zoom.frame(), off = this.zoom.railOffset(), vw = this.layout.viewport().w;
+    return { left: f.x + off + 16, right: vw - (f.x + f.w + off) + 16, top: f.y + 16 };
+  });
 
   /** Mobile: the zoom chip and minimap show while zooming, then get out of the way. */
   protected readonly zoomUiAwake = signal(false);

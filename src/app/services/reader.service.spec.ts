@@ -1,5 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { ReaderService, Spot, buildUrl, classifyMiss } from './reader.service';
+import { PreloadService } from './preload.service';
+import { LibraryService } from './library.service';
 
 const spot = (page: number, chapter = 214, manga = 'crimson_tide_ronin'): Spot => ({ manga, chapter, page });
 
@@ -61,7 +63,7 @@ describe('ReaderService misses', () => {
     await settle();
   }
 
-  it('shows the end of chapter, not a 404, when a click zone walks past the last page', async () => {
+  it('shows the end of chapter, not a 404, when a page-only turn walks past the last page', async () => {
     await open(19);
     reader.nextPage();
     await settle();
@@ -71,7 +73,7 @@ describe('ReaderService misses', () => {
     expect(reader.totalPages()).toBe(19);
   });
 
-  it('keeps click zones inside the chapter', async () => {
+  it('keeps page-only turns (neighbour clicks, swipes) inside the chapter', async () => {
     await open(19);
     reader.nextPage();
     await settle();
@@ -97,6 +99,42 @@ describe('ReaderService misses', () => {
     await settle();
     expect(reader.screen()).toBe('not-found');
     expect(reader.lastGood()).toBeNull();
+  });
+
+  it('turns at once onto a page fetched ahead, and fetches the next neighbours', async () => {
+    await open(7);
+    expect(reader.nextPage()).toBe(true);
+    expect(reader.lastGood()).toEqual(spot(8));
+    expect(reader.busy()).toBe(false);
+    await settle();
+    const preload = TestBed.inject(PreloadService);
+    expect(preload.ready(buildUrl('crimson_tide_ronin', 214, 9))).toBe(true);
+    expect(preload.ready(buildUrl('crimson_tide_ronin', 214, 7))).toBe(true);
+  });
+
+  it("keeps the counters on the old chapter's length until its page leaves", async () => {
+    await open(18);
+    reader.nextPage();
+    await settle();
+    TestBed.inject(LibraryService).saveChapterLength('crimson_tide_ronin', 213, 22);
+    reader.load('crimson_tide_ronin', 213, 5);
+    // Page 5 of 213 is still on its way: the page on screen is 214's, and so is the count.
+    expect(reader.busy()).toBe(true);
+    expect(reader.totalPages()).toBe(22);
+    expect(reader.shownTotal()).toBe(19);
+    await settle();
+    expect(reader.shown()).toEqual({ chapter: 213, page: 5 });
+    expect(reader.shownTotal()).toBe(22);
+  });
+
+  it('keeps the caption on the outgoing page while a turn holds it, then follows the page', async () => {
+    await open(7);
+    reader.captionHold.set({ chapter: 214, page: 7 });
+    reader.nextPage();
+    expect(reader.lastGood()).toEqual(spot(8));
+    expect(reader.shown()).toEqual({ chapter: 214, page: 7 });
+    reader.captionHold.set(null);
+    expect(reader.shown()).toEqual({ chapter: 214, page: 8 });
   });
 
   it('goes back to the last page from the end card', async () => {

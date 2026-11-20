@@ -1,8 +1,10 @@
 import { Component, computed, inject } from '@angular/core';
 import { ReaderService } from '../../services/reader.service';
 import { UiService } from '../../services/ui.service';
+import { ZoomService } from '../../services/zoom.service';
+import { LayoutService } from '../../services/layout.service';
+import { RAIL_EDGE } from '../../strip/strip';
 import { ReaderComponent } from '../../components/reader/reader.component';
-import { ClickZonesComponent } from '../../components/click-zones/click-zones.component';
 import { WelcomeComponent } from '../../components/welcome/welcome.component';
 import { NotFoundComponent } from '../../components/not-found/not-found.component';
 import { LoadingCardComponent } from '../../components/loading-card/loading-card.component';
@@ -14,11 +16,11 @@ import { BottomBarComponent } from '../../components/bottom-bar/bottom-bar.compo
 import { SettingsComponent } from '../../components/settings/settings.component';
 import { ZoomChipComponent } from '../../components/zoom-chip/zoom-chip.component';
 
-/** Desktop: page with click zones, left rail (controls + library), bottom bar, settings dialog. */
+/** Desktop: the page strip (click a neighbour to turn), left rail (controls + library), bottom bar, settings dialog. */
 @Component({
   selector: 'app-desktop-layout',
   imports: [
-    ReaderComponent, ClickZonesComponent, WelcomeComponent, NotFoundComponent, LoadingCardComponent,
+    ReaderComponent, WelcomeComponent, NotFoundComponent, LoadingCardComponent,
     EndOfChapterComponent, HudComponent, ControlPanelComponent, LibraryPanelComponent, BottomBarComponent, SettingsComponent, ZoomChipComponent,
   ],
   host: { class: 'contents' },
@@ -28,7 +30,6 @@ import { ZoomChipComponent } from '../../components/zoom-chip/zoom-chip.componen
     <!-- Everything but Settings: inert while the Settings dialog is open. -->
     <div class="contents" [inert]="ui.settingsOpen()">
     <app-reader />
-    @if (reading()) { <app-click-zones /> }
 
     @switch (screen) {
       @case ('welcome') { <app-welcome class="stage" animate.enter="a-screen-in" animate.leave="a-fade-out" /> }
@@ -47,7 +48,8 @@ import { ZoomChipComponent } from '../../components/zoom-chip/zoom-chip.componen
     </div>
 
     @if (reading()) {
-      <div class="slide-up pointer-events-none fixed inset-x-0 bottom-6 z-50 flex justify-center max-xl:pl-[384px] max-xl:pr-6"
+      <!-- Centred under the page (its frame, when zoomed), kept clear of the rail and the window edge. -->
+      <div class="slide-up pointer-events-none fixed bottom-6 z-50 -translate-x-1/2" [style.left.px]="barX()"
         [attr.data-shown]="shown" [inert]="!shown" animate.enter="a-rise-in">
         <app-bottom-bar class="vt-bar pointer-events-auto w-[552px] max-xl:w-auto" />
       </div>
@@ -63,6 +65,17 @@ import { ZoomChipComponent } from '../../components/zoom-chip/zoom-chip.componen
 export class DesktopLayoutComponent {
   protected reader = inject(ReaderService);
   protected ui = inject(UiService);
+  protected zoom = inject(ZoomService);
+  private layout = inject(LayoutService);
+
+  /** Centre of the bottom bar: under the page, but never over the rail (it is up whenever the bar is) and never
+   *  past the window's right edge. The bar is 552px wide from xl, about 320px below. */
+  protected readonly barX = computed(() => {
+    const f = this.zoom.frame(), vw = this.layout.viewport().w;
+    const half = (vw >= 1280 ? 552 : 320) / 2;
+    const centre = f.x + f.w / 2 + this.zoom.railOffset();
+    return Math.min(vw - 24 - half, Math.max(RAIL_EDGE + half, centre));
+  });
 
   protected readonly reading = computed(() => {
     const s = this.reader.screen();

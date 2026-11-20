@@ -41,7 +41,7 @@ export class PageScrubberComponent {
   /** The page under the finger while scrubbing, null otherwise. */
   readonly preview = model<number | null>(null);
 
-  protected readonly total = computed(() => this.reader.totalPages() ?? 0);
+  protected readonly total = computed(() => this.reader.shownTotal() ?? 0);
   protected readonly shown = computed(() => this.preview() ?? this.reader.shown().page);
   protected readonly ticks = computed(() => {
     const tp = this.total();

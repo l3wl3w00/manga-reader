@@ -8,7 +8,7 @@ describe('JumpFormComponent', () => {
   // Regression: Go used the last typed chapter/page, not where the reader is now.
   it('Go reloads the place being read, not stale typed values', async () => {
     const reader = TestBed.inject(ReaderService);
-    const load = vi.spyOn(reader, 'load').mockImplementation(() => {});
+    const load = vi.spyOn(reader, 'load').mockImplementation(() => true);
     const fixture = TestBed.createComponent(JumpFormComponent);
     await fixture.whenStable();
     reader.manga.set('iron_orchard'); reader.chapter.set(3); reader.page.set(9);

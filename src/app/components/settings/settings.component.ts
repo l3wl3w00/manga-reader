@@ -1,4 +1,4 @@
-import { Component, DestroyRef, ElementRef, afterNextRender, computed, inject, linkedSignal, viewChild } from '@angular/core';
+import { Component, DestroyRef, ElementRef, afterEveryRender, afterNextRender, computed, inject, linkedSignal, signal, viewChild } from '@angular/core';
 import { LucideAngularModule } from 'lucide-angular';
 import { UiService } from '../../services/ui.service';
 import { LayoutService } from '../../services/layout.service';
@@ -7,17 +7,17 @@ import { ICONS } from '../../ui/icons';
 import { focusables, wrapTarget } from '../../ui/focus-trap';
 import { KeybindingsTabComponent } from './keybindings-tab/keybindings-tab.component';
 import { ZoomTabComponent } from './zoom-tab/zoom-tab.component';
-import { GesturesTabComponent } from './gestures-tab/gestures-tab.component';
-import { MotionTabComponent } from './motion-tab/motion-tab.component';
+import { ControlsTabComponent } from './controls-tab/controls-tab.component';
+import { AppearanceTabComponent } from './appearance-tab/appearance-tab.component';
 
-type Tab = 'keys' | 'zoom' | 'motion' | 'gestures';
-const TAB_LABELS: Record<Tab, string> = { keys: 'Keybindings', zoom: 'Zoom', motion: 'Motion', gestures: 'Gestures' };
+type Tab = 'keys' | 'zoom' | 'appearance' | 'controls';
+const TAB_LABELS: Record<Tab, string> = { keys: 'Keybindings', zoom: 'Zoom', appearance: 'Appearance', controls: 'Controls' };
 
-/** Settings: a dialog on desktop (Keybindings, Zoom), full screen on mobile (Gestures, Zoom, and
- *  Keybindings when a keyboard is around). */
+/** Settings: a dialog on desktop (Keybindings, Zoom, Appearance), full screen on mobile (Controls, with the
+ *  keybindings inside when a keyboard is around, Zoom, Appearance). */
 @Component({
   selector: 'app-settings',
-  imports: [LucideAngularModule, KeybindingsTabComponent, ZoomTabComponent, MotionTabComponent, GesturesTabComponent],
+  imports: [LucideAngularModule, KeybindingsTabComponent, ZoomTabComponent, AppearanceTabComponent, ControlsTabComponent],
   host: { class: 'fixed inset-0 z-[100]', 'animate.leave': 'x-leave', '(keydown.tab)': 'trapTab($event)', '(keydown.shift.tab)': 'trapTab($event)' },
   template: `
     @let mobile = layout.mobile();
@@ -38,20 +38,22 @@ const TAB_LABELS: Record<Tab, string> = { keys: 'Keybindings', zoom: 'Zoom', mot
       <div class="flex shrink-0 items-end border-b-2 border-paper" [class]="mobile ? 'px-2' : 'h-14 pl-1.5 pr-2.5'">
         <div class="mr-auto flex self-stretch items-end" role="tablist">
           @for (t of tabs(); track t) {
-            <button class="tab" [class]="mobile ? 'h-12' : 'h-[54px]'" role="tab" [attr.aria-selected]="active() === t"
-              (click)="active.set(t)">{{ labels[t] }}</button>
+            <button class="tab" [class]="mobile ? 'h-12 px-[9px] tracking-[0.04em]' : 'h-[54px]'" role="tab" [attr.aria-selected]="active() === t"
+              (click)="select(t, $event)">{{ labels[t] }}</button>
           }
         </div>
         @if (!mobile) {
           <button class="ib size-10 self-center" (click)="ui.closeSettings()" aria-label="Close settings"><lucide-icon [img]="icons.x" [size]="20" /></button>
         }
       </div>
-      <div class="scroll-thin min-h-0 flex-1 overflow-y-auto overscroll-contain" role="tabpanel" [attr.aria-label]="labels[active()]">
+      <!-- Fades out at its foot while there is more below the fold. -->
+      <div #body class="scroll-thin min-h-0 flex-1 overflow-y-auto overscroll-contain" role="tabpanel" [attr.aria-label]="labels[active()]"
+        [class.fade-foot]="moreBelow()" (scroll)="measure()">
         @switch (active()) {
           @case ('keys') { <app-keybindings-tab class="a-fade-in" /> }
           @case ('zoom') { <app-zoom-tab class="a-fade-in" /> }
-          @case ('motion') { <app-motion-tab class="a-fade-in" /> }
-          @case ('gestures') { <app-gestures-tab class="a-fade-in" /> }
+          @case ('appearance') { <app-appearance-tab class="a-fade-in" /> }
+          @case ('controls') { <app-controls-tab class="a-fade-in" /> }
         }
       </div>
     </section>
@@ -65,20 +67,21 @@ export class SettingsComponent {
   protected readonly labels = TAB_LABELS;
 
   protected readonly tabs = computed<Tab[]>(() =>
-    this.layout.mobile()
-      ? ['gestures', 'zoom', 'motion', ...(this.layout.finePointer() ? ['keys' as const] : [])]
-      : ['keys', 'zoom', 'motion']);
+    this.layout.mobile() ? ['controls', 'zoom', 'appearance'] : ['keys', 'zoom', 'appearance']);
   protected readonly active = linkedSignal<Tab[], Tab>({
     source: this.tabs,
     computation: (tabs, prev) => (prev && tabs.includes(prev.value) ? prev.value : tabs[0]),
   });
 
   private readonly dialog = viewChild.required<ElementRef<HTMLElement>>('dialog');
+  private readonly body = viewChild<ElementRef<HTMLElement>>('body');
+  protected readonly moreBelow = signal(false);
 
   constructor() {
     // Modal (the layouts make the app behind inert): focus starts on the active tab and goes back to the
     // opener on close.
     const opener = document.activeElement as HTMLElement | null;
+    afterEveryRender(() => this.measure());
     afterNextRender(() => {
       const dialog = this.dialog().nativeElement;
       (dialog.querySelector<HTMLElement>('[role=tab][aria-selected=true]') ?? dialog).focus();
@@ -88,6 +91,17 @@ export class SettingsComponent {
       this.kb.recordingAction.set(null);
       if (opener?.isConnected) opener.focus();
     });
+  }
+
+  /** Selecting a tab moves focus to it, so a focus ring never stays behind on another tab. */
+  protected select(t: Tab, e: Event) {
+    this.active.set(t);
+    (e.currentTarget as HTMLElement).focus();
+  }
+
+  protected measure() {
+    const el = this.body()?.nativeElement;
+    this.moreBelow.set(!!el && el.scrollTop + el.clientHeight < el.scrollHeight - 8);
   }
 
   /** Tab and Shift+Tab wrap inside the dialog. */

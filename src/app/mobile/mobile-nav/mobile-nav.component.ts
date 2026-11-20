@@ -8,7 +8,7 @@ import { PageScrubberComponent } from '../page-scrubber/page-scrubber.component'
 const pad2 = (n: number) => String(n).padStart(2, '0');
 
 /** Mobile reading controls, bottom (in thumb reach): page scrubber and navigation.
- *  Unlike taps and swipes, these buttons cross chapters. */
+ *  Unlike swipes, these buttons cross chapters. */
 @Component({
   selector: 'app-mobile-nav',
   imports: [LucideAngularModule, PageScrubberComponent],
@@ -26,9 +26,9 @@ const pad2 = (n: number) => String(n).padStart(2, '0');
         <lucide-icon [img]="icons.chevronLeft" [size]="18" /><span>Page</span>
       </button>
       <button class="nav-btn nav-col flex-[1.5] text-paper" (click)="ui.openSheet('jump')"
-        [attr.aria-label]="'Page ' + reader.shown().page + (reader.totalPages() ? ' of ' + reader.totalPages() : ', chapter length not known yet') + '. Jump to a page'">
+        [attr.aria-label]="'Page ' + reader.shown().page + (reader.shownTotal() ? ' of ' + reader.shownTotal() : ', chapter length not known yet') + '. Jump to a page'">
         <span class="font-mono text-[17px] tracking-normal normal-case">
-          {{ pad2(scrub() ?? reader.shown().page) }}<span class="text-mute"> / {{ reader.totalPages() ?? '?' }}</span>
+          {{ pad2(scrub() ?? reader.shown().page) }}<span class="text-mute"> / {{ reader.shownTotal() ?? '?' }}</span>
         </span>
         <span class="text-shu">Jump</span>
       </button>

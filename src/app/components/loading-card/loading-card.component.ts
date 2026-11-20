@@ -1,5 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { ReaderService } from '../../services/reader.service';
+import { LibraryService } from '../../services/library.service';
 
 /** Shown over the skeleton when a page is slow to arrive. */
 @Component({
@@ -16,10 +17,11 @@ import { ReaderService } from '../../services/reader.service';
     <div class="a-seg flex gap-1" aria-hidden="true">
       @for (i of segments; track i) { <i class="h-2.5 flex-1 bg-surface-3" [style.--i]="i"></i> }
     </div>
-    <span class="font-mono text-[11px] text-mute mobile:hidden">{{ reader.manga() }} · ch {{ reader.chapter() }}</span>
+    <span class="font-mono text-[11px] text-mute mobile:hidden">{{ lib.formatName(reader.manga()) }} · ch {{ reader.chapter() }}</span>
   `,
 })
 export class LoadingCardComponent {
   protected reader = inject(ReaderService);
+  protected lib = inject(LibraryService);
   protected readonly segments = [0, 1, 2, 3, 4, 5];
 }

@@ -7,7 +7,8 @@ export const folioWidth = (text: string) => text.length * 11 * (MONO_ADVANCE + 0
 /** .key.key-sm: 12px bold mono, 8px padding and a 2px border each side. */
 const keyWidth = (label: string) => label.length * 12 * MONO_ADVANCE + 20;
 
-/** Distance from the screen edge to the overlay, and the space kept free before the page. */
+/** Distance from the screen edge to the overlay's text (a 16px inset plus the ink chip's 8px padding), and the
+ *  space kept free before the page (the chip's right padding fits inside it). */
 export const OVERLAY_LEFT = 24;
 const PAGE_GAP = 12;
 

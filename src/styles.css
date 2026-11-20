@@ -22,6 +22,17 @@
   --color-faint: #6e6a62;
   --color-shu: #ff4d5e;
   --color-gold: #ffd23f;
+  /* Backdrops: deep print colours behind the pages (Settings > Appearance). The page always stays in front. */
+  --color-bd-indigo: #111a2e;
+  --color-bd-oxblood: #2a0f14;
+  --color-bd-moss: #10201a;
+  --color-bd-kraft: #2b241b;
+  --color-bd-slate: #1c1f24;
+  --color-bd-teal: #0e2a30;
+  /* Ground of a hidden neighbour page and of a loading one. */
+  --color-nb: #6e6b64;
+  --color-nb-skel: #3b3a3e;
+  --color-nb-dot: #6b6860;
 
   --font-display: "Dela Gothic One", "Zen Kaku Gothic New", sans-serif;
   --font-sans: "Zen Kaku Gothic New", system-ui, sans-serif;
@@ -179,6 +190,32 @@
   .nav-btn[aria-disabled="true"] { @apply bg-transparent text-faint cursor-default; }
   .nav-btn[aria-disabled="true"] > * { transform: none; }
 
+  /* Segmented choice and colour swatches: labels around visually hidden native radios (arrow keys work). */
+  .seg {
+    @apply relative inline-flex flex-1 cursor-pointer items-center justify-center h-10 px-2 border-2 border-paper bg-surface-1
+      text-paper font-bold text-[13px] tracking-[0.08em] uppercase whitespace-nowrap;
+    transition: background-color 120ms, color 120ms;
+  }
+  .seg + .seg { margin-left: -2px; }
+  .seg:hover { @apply bg-surface-2; }
+  .seg:has(:checked) { @apply bg-paper text-ink; }
+  .seg-lg { @apply h-12; }
+  .swatch {
+    @apply relative flex cursor-pointer items-center justify-center border-2 border-line text-paper;
+    transition: border-color 120ms, box-shadow 160ms var(--ease-snap);
+  }
+  .swatch:hover { @apply border-mute; }
+  .swatch:has(:checked) { @apply border-paper shadow-[3px_3px_0_var(--color-shu)]; }
+  .swatch-new { @apply border-dashed border-mute bg-transparent text-dim; }
+  .seg:has(:focus-visible), .swatch:has(:focus-visible), .chip:has(:focus-visible) { outline: 3px solid var(--color-gold); outline-offset: 2px; z-index: 1; }
+  /* A colour chip: swatch and hex, opening the system colour picker. */
+  .chip {
+    @apply relative flex h-10 cursor-pointer items-center gap-2 border-2 border-line bg-ink pl-1 pr-2.5 font-mono text-xs;
+    transition: border-color 120ms;
+  }
+  .chip:hover { @apply border-mute; }
+  .chip > i { @apply size-7 shrink-0 border border-mute; }
+
   .prg { @apply block h-1.5 w-full bg-surface-3; }
   .prg > i { @apply block h-full bg-paper origin-left; transition: transform 320ms var(--ease-snap); }
   .prg-cur > i { @apply bg-shu; }
@@ -214,6 +251,9 @@
   .t-speed { background: radial-gradient(circle at 62% 55%, #fff 0 18%, transparent 40%), repeating-conic-gradient(from 0deg at 62% 55%, #111 0 1.1deg, #fff 1.1deg 5deg); }
   .t-dot { background: radial-gradient(circle, #111 1.3px, transparent 1.7px) 0 0 / 7px 7px, #fff; }
   .t-hatch { background: repeating-linear-gradient(115deg, #111 0 1.2px, transparent 1.2px 7px), #fff; }
+  /* Tone-only stand-ins for hidden neighbour pages in the settings preview. */
+  .tone-a { background: radial-gradient(45% 30% at 30% 18%, #111 0, transparent 75%), radial-gradient(55% 28% at 68% 82%, #444 0, transparent 75%), #f4f1ea; }
+  .tone-b { background: radial-gradient(50% 26% at 70% 16%, #333 0, transparent 75%), radial-gradient(40% 34% at 28% 60%, #111 0, transparent 75%), #f4f1ea; }
 }
 
 /* ---------- Motion ---------- */
@@ -317,22 +357,83 @@
 .vt-top { view-transition-name: vt-top; view-transition-class: chrome; }
 .vt-nav { view-transition-name: vt-nav; view-transition-class: chrome; }
 
-/* Next/prev slide like a strip of pages: the old page leaves one screen width while the new one
-   arrives from the other side, both on the same curve so they move as one. */
-@keyframes turn-old-next { to { transform: translateX(-100vw); } }
-@keyframes turn-new-next { from { transform: translateX(100vw); } }
-@keyframes turn-old-prev { to { transform: translateX(100vw); } }
-@keyframes turn-new-prev { from { transform: translateX(-100vw); } }
+/* Next/prev turns run on the page strip itself (below); only jumps (library, Go) fade through a View Transition. */
 @keyframes turn-new-jump { from { opacity: 0; transform: scale(0.985); } }
 
 ::view-transition-group(page) { animation-duration: 220ms; }
 ::view-transition-old(page), ::view-transition-new(page) { animation: none; mix-blend-mode: normal; height: 100%; }
-html[data-turn="next"]::view-transition-old(page) { animation: turn-old-next 280ms var(--ease-snap) both; }
-html[data-turn="next"]::view-transition-new(page) { animation: turn-new-next 280ms var(--ease-snap) both; }
-html[data-turn="prev"]::view-transition-old(page) { animation: turn-old-prev 280ms var(--ease-snap) both; }
-html[data-turn="prev"]::view-transition-new(page) { animation: turn-new-prev 280ms var(--ease-snap) both; }
 html[data-turn="jump"]::view-transition-old(page) { animation: fade-out 140ms ease-in both; }
 html[data-turn="jump"]::view-transition-new(page) { animation: turn-new-jump 240ms var(--ease-snap) both; }
+
+/* ---------- Page strip ----------
+   The pages in one line: only the current one is sharp and interactive; the neighbours beside it are cut off by
+   the screen edge and never readable (no spoilers): a 1/8-size blurred drawing (TinyPageDirective) under an ink
+   wash and a halftone screen. The reader animates a turn with transform, filter and opacity only. */
+.strip { position: absolute; inset: 0; overflow: hidden; transition: transform 300ms var(--ease-spring-soft); }
+.strip-run { position: absolute; inset: 0; }
+.slot { position: absolute; inset: 0; pointer-events: none; transition: opacity 160ms ease-out; }
+.slot-cur { z-index: 2; }
+/* A slot's frame. The current page zooms and pans inside it (translate + scale on .slot-zoom, which is the page at
+   100%); the frame grows with the zoom up to a cap, so the neighbours stay in view beside it. */
+.slot-box { position: absolute; overflow: hidden; }
+.slot-zoom { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+.slot-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; user-select: none; }
+.veil { position: absolute; inset: 0; z-index: 1; overflow: hidden; background: var(--color-nb); }
+.veil > canvas { display: block; width: 100%; height: 100%; }
+.veil::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(circle, rgb(11 11 12 / 0.8) 1.6px, transparent 2px) 0 0 / 6px 6px, rgb(11 11 12 / 0.45);
+}
+/* Current page: the veil only shows while it is turning in (animated by the reader). */
+.slot-cur .veil { opacity: 0; }
+/* Neighbour: hidden at the chosen see-through. Becoming one (the outgoing page) it obscures within 80ms; past the
+   snap mark of a swipe (.armed) it sharpens. */
+.slot-nb .veil { opacity: var(--nb-alpha, 1); transition: opacity 80ms linear; }
+.slot-nb.armed .veil { opacity: 0; transition-duration: 144ms; }
+/* Hovering a neighbour shows the hint and an outline only: the hidden page itself never changes. */
+.nb-box { position: absolute; container-type: size; }
+.nb-skel {
+  opacity: var(--nb-alpha, 1); box-shadow: inset 0 0 0 2px var(--color-nb-dot);
+  background: radial-gradient(circle, var(--color-nb-dot) 1.6px, transparent 2px) 0 0 / 8px 8px, var(--color-nb-skel);
+}
+.nb-hit { position: absolute; z-index: 2; pointer-events: auto; background: transparent; outline: none; }
+.nb-hit:hover { box-shadow: inset 0 0 0 2px var(--color-paper); }
+.nb-inert { cursor: default; }
+.nb-inert:hover, .turning .nb-hit:hover { box-shadow: none; }
+/* The teaser is the one neighbour click that changes chapter: hovering it lights it up. */
+.nb-teaser { transition: background-color 140ms, border-color 140ms; }
+.nb-teaser .btn-primary { transition: transform 140ms var(--ease-snap), box-shadow 140ms var(--ease-snap); }
+.slot:has(.nb-hit:hover) .nb-teaser { background: var(--color-surface-2); border-color: var(--color-shu); }
+.slot:has(.nb-hit:hover) .nb-teaser .btn-primary { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--color-paper); }
+.turning .nb-teaser, .turning .nb-teaser .btn-primary { transition: none; }
+.nb-hint {
+  position: absolute; top: 50%; display: flex; flex-direction: column; align-items: center; gap: 10px;
+  color: var(--color-paper); opacity: 0; transform: translate(-50%, -50%); transition: opacity 140ms ease-out;
+}
+.nb-hit:hover .nb-hint { opacity: 1; }
+.turning .nb-hint { opacity: 0 !important; transition: none; }
+.nb-arrow { transition: transform 220ms var(--ease-spring); }
+.nb-hit:not(:hover) .nb-arrow { transform: translateX(var(--nudge, 0)); }
+
+/* ---------- Backdrops ----------
+   Behind the pages. Solid: one flat colour. Drift: colours 2 and 3 as big halftone dot fields fading in from
+   opposite corners; only the two pseudo-elements move (a 90s transform and opacity loop on the compositor). */
+.bd { position: absolute; inset: 0; overflow: hidden; background: var(--c1, var(--color-ink)); --g: 30px; }
+.bd-drift::before, .bd-drift::after { content: ""; position: absolute; inset: -14%; will-change: transform, opacity; }
+.bd-drift::before {
+  background:
+    radial-gradient(circle, var(--c2) calc(var(--g) * 0.3), transparent calc(var(--g) * 0.3 + 1px)) 0 0 / var(--g) var(--g),
+    radial-gradient(circle, var(--c2) calc(var(--g) * 0.3), transparent calc(var(--g) * 0.3 + 1px)) calc(var(--g) / 2) calc(var(--g) / 2) / var(--g) var(--g);
+  mask-image: linear-gradient(115deg, #000 0, transparent 62%);
+  animation: drift-a 90s ease-in-out infinite;
+}
+.bd-drift::after {
+  background: radial-gradient(circle, var(--c3) calc(var(--g) * 0.2), transparent calc(var(--g) * 0.2 + 1px)) 0 0 / var(--g) var(--g);
+  mask-image: linear-gradient(295deg, #000 0, transparent 50%);
+  animation: drift-b 90s ease-in-out infinite;
+}
+@keyframes drift-a { 0%, 100% { transform: translate3d(-6%, -4%, 0); opacity: 1; } 50% { transform: translate3d(7%, 5%, 0); opacity: 0.65; } }
+@keyframes drift-b { 0%, 100% { transform: translate3d(6%, 4%, 0); opacity: 0.7; } 50% { transform: translate3d(-7%, -5%, 0); opacity: 1; } }
 
 /* ---------- Reduced motion: everything becomes a short fade. ----------
    MotionService sets data-motion from the in-app setting (or the system's prefers-reduced-motion). */
@@ -348,4 +449,8 @@ html[data-motion="reduced"] {
   .tgl::after, .tab::after, .prg > i { transition: none; }
   &[data-turn]::view-transition-old(page) { animation: fade-out 100ms ease-in both !important; }
   &[data-turn]::view-transition-new(page) { animation: fade-in 100ms ease-out both !important; }
+  /* The strip jumps (the reader fades the new page in over 120ms) and the neighbours are hidden at once. */
+  .strip, .slot, .slot-nb .veil, .nb-arrow { transition: none !important; }
+  /* Drift holds still on one frame, like a printed two-colour sheet. */
+  .bd-drift::before, .bd-drift::after { animation: none !important; }
 }

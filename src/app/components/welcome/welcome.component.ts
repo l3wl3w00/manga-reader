@@ -55,6 +55,6 @@ export class WelcomeComponent {
   protected readonly steps = [
     { n: '01', title: 'Name it.', text: "Use the site's spelling. Not sure? Search on MangaFreak." },
     { n: '02', title: 'Pick a spot.', text: 'Chapter and page both start at 1.' },
-    { n: '03', title: 'Read.', text: 'Click the right edge for the next page, the left edge to go back.' },
+    { n: '03', title: 'Read.', text: 'Click the page beside this one to turn to it. The keys and the bottom bar roll on into the next chapter.' },
   ];
 }

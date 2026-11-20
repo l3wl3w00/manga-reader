@@ -31,9 +31,6 @@ import { MotionPref, MotionService } from '../../../services/motion.service';
                 } @else { {{ o.text }} }
               </span>
             </span>
-            @if (o.value === 'system' && motion.pref() === 'system') {
-              <span class="tag text-mute">{{ motion.motion() === 'full' ? 'Full' : 'Reduced' }}</span>
-            }
           </label>
         }
       </div>

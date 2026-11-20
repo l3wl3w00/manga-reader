@@ -9,21 +9,25 @@ import { MotionService } from './services/motion.service';
 import { UiService } from './services/ui.service';
 import { DesktopLayoutComponent } from './layouts/desktop-layout/desktop-layout.component';
 import { MobileLayoutComponent } from './layouts/mobile-layout/mobile-layout.component';
+import { BackdropComponent } from './ui/backdrop/backdrop.component';
 
 const isTyping = (e: Event) => {
   const t = e.target as HTMLElement | null;
   return !!t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
 };
 
-/** Root: picks the desktop or mobile layout, resumes the last read page, and owns the keyboard. */
+/** Root: the backdrop, the desktop or mobile layout, resuming the last read page, and the keyboard. */
 @Component({
   selector: 'app-root',
-  imports: [DesktopLayoutComponent, MobileLayoutComponent],
+  imports: [DesktopLayoutComponent, MobileLayoutComponent, BackdropComponent],
   host: {
     '(document:keydown)': 'onKeyDown($event)',
     '(document:keyup)': 'onKeyUp($event)',
   },
-  template: `@if (layout.mobile()) { <app-mobile-layout /> } @else { <app-desktop-layout /> }`,
+  template: `
+    <app-backdrop class="fixed inset-0" />
+    @if (layout.mobile()) { <app-mobile-layout /> } @else { <app-desktop-layout /> }
+  `,
 })
 export class App implements OnInit {
   private reader = inject(ReaderService);

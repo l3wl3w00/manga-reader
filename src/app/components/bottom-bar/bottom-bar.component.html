@@ -12,7 +12,7 @@
 
   <div class="flex min-w-0 flex-1 flex-col justify-center gap-[5px] border-r-2 border-line px-4 max-xl:w-24 max-xl:flex-none max-xl:px-3">
     <div class="text-center font-mono text-[15px] font-bold" aria-live="polite">
-      @if (reader.totalPages(); as tp) {
+      @if (reader.shownTotal(); as tp) {
         {{ pad2(reader.shown().page) }} <span class="text-mute">/ {{ tp }}</span>
       } @else {
         Page {{ pad2(reader.shown().page) }}
@@ -20,7 +20,7 @@
     </div>
     @if (ticks(); as t) {
       <div class="tick" aria-hidden="true">@for (on of t; track $index) { <i [class.on]="on"></i> }</div>
-    } @else if (reader.totalPages()) {
+    } @else if (reader.shownTotal()) {
       <span class="prg prg-cur h-1"><i [style.transform]="'scaleX(' + reader.progress() / 100 + ')'"></i></span>
     } @else {
       <div class="h-1 bg-[repeating-linear-gradient(90deg,var(--color-shu)_0_8px,transparent_8px_14px)]" [class.a-march]="busy" aria-hidden="true"></div>

@@ -71,8 +71,8 @@
       <ng-container *ngTemplateOutlet="previewFrame" />
       <div class="flex flex-col gap-2 pb-1">
         <span class="lbl">Preview · this screen</span>
-        <span class="text-[13px] text-dim">Pages open at</span>
-        <span class="dsp text-[40px] text-shu">{{ p.percent }}%</span>
+        <span class="text-[13px] text-dim">{{ zoom.autoFit() ? 'Pages open at' : 'With auto-fit on, pages would open at' }}</span>
+        <span class="dsp text-[40px]" [class]="zoom.autoFit() ? 'text-shu' : 'text-mute'">{{ p.percent }}%</span>
         <span class="text-xs leading-normal text-mute">{{ p.byWidth ? 'Capped by max width. ' : '' }}Starts at the top of the page; drag to read down.</span>
       </div>
     </div>
@@ -81,7 +81,8 @@
       <span class="lbl">Preview · this window</span>
       <ng-container *ngTemplateOutlet="previewFrame" />
       <div class="flex items-baseline justify-between">
-        <span class="text-[13px] text-dim">Pages open at</span><span class="dsp text-[28px] text-shu">{{ p.percent }}%</span>
+        <span class="text-[13px] text-dim">{{ zoom.autoFit() ? 'Pages open at' : 'With auto-fit on, pages would open at' }}</span>
+        <span class="dsp text-[28px]" [class]="zoom.autoFit() ? 'text-shu' : 'text-mute'">{{ p.percent }}%</span>
       </div>
       <span class="text-xs text-mute">Starts at the top of the page. {{ kb.keyFor('jumpVert') }} jumps to the bottom.</span>
     </div>

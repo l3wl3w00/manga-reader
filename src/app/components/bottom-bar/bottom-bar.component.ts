@@ -21,7 +21,7 @@ export class BottomBarComponent {
 
   protected readonly atStart = computed(() => this.reader.page() <= 1 && this.reader.chapter() <= 1);
   protected readonly ticks = computed(() => {
-    const tp = this.reader.totalPages();
+    const tp = this.reader.shownTotal();
     return tp && tp <= MAX_TICKS ? Array.from({ length: tp }, (_, i) => i < this.reader.shown().page) : null;
   });
 }

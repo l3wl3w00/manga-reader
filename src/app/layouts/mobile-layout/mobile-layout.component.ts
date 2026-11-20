@@ -17,15 +17,16 @@ import { MobileTopBarComponent } from '../../mobile/mobile-top-bar/mobile-top-ba
 import { MobileNavComponent } from '../../mobile/mobile-nav/mobile-nav.component';
 import { GestureLayerComponent } from '../../mobile/gesture-layer/gesture-layer.component';
 import { LibrarySheetComponent } from '../../mobile/library-sheet/library-sheet.component';
+import { SwipeCueComponent } from '../../mobile/swipe-cue/swipe-cue.component';
 
-/** Mobile (narrow or touch): full-bleed page with gestures, top and bottom bars, bottom sheets,
+/** Mobile (narrow or touch): the page strip with its neighbours as slivers, gestures (swipe to turn), top and bottom bars, bottom sheets,
  *  full-screen settings. */
 @Component({
   selector: 'app-mobile-layout',
   imports: [
     LucideAngularModule, SheetComponent, ReaderComponent, WelcomeComponent, NotFoundComponent, LoadingCardComponent,
     EndOfChapterComponent, HudComponent, JumpFormComponent, SettingsComponent, MobileHeaderComponent,
-    MobileTopBarComponent, MobileNavComponent, GestureLayerComponent, LibrarySheetComponent,
+    MobileTopBarComponent, MobileNavComponent, GestureLayerComponent, LibrarySheetComponent, SwipeCueComponent,
   ],
   host: { class: 'contents' },
   template: `
@@ -49,6 +50,7 @@ import { LibrarySheetComponent } from '../../mobile/library-sheet/library-sheet.
       @default {
         <app-reader />
         <app-gesture-layer />
+        <app-swipe-cue />
         @if (reader.screen() === 'loading') { <app-loading-card animate.enter="a-pop-in" animate.leave="a-fade-out" /> }
         @if (reader.screen() === 'end') { <app-end-of-chapter /> }
         <app-hud />

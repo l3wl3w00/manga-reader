@@ -1,0 +1,134 @@
+@let mobile = layout.mobile();
+@let b = app.backdrop();
+@let alpha = app.neighbourAlpha();
+
+<ng-template #preview>
+  <!-- This reader, small: the backdrop, the hidden neighbours at the chosen see-through, the page in front. -->
+  <div class="relative shrink-0 overflow-hidden border-2 border-paper dot-ground" [class]="mobile ? 'h-[150px]' : 'h-[238px]'" aria-hidden="true">
+    <app-backdrop class="absolute inset-0" [look]="app.look()" [grid]="10" />
+    @for (n of mobile ? [1.1, 73.7] : [-15.5, 73.7]; track n; let i = $index) {
+      <div class="veil absolute" [style.left.%]="n" [class]="mobile ? 'top-[8%] h-[84%] w-[24.6%]' : 'top-[2.2%] h-[95.6%] w-[41.8%]'" [style.opacity]="alpha">
+        <div class="absolute inset-0 blur-[10px] brightness-60" [class]="i ? 'tone-b' : 'tone-a'"></div>
+      </div>
+    }
+    <app-page-art kind="print" class="absolute shadow-[0_0_0_1px_#000]"
+      [class]="mobile ? 'left-[37.4%] top-[8%] h-[84%] w-[24.6%]' : 'left-[29.1%] top-[2.2%] h-[95.6%] w-[41.8%]'" />
+  </div>
+</ng-template>
+
+<ng-template #neighbours>
+  <div class="flex flex-col gap-2">
+    <span class="lbl" id="nb-title">Neighbour pages</span>
+    <div role="radiogroup" aria-labelledby="nb-title" class="flex">
+      @for (o of opacities; track o.value) {
+        <label class="seg" [class.seg-lg]="mobile">
+          <input type="radio" name="nb-opacity" class="sr-only" [value]="o.value" [checked]="app.neighbours() === o.value"
+            (change)="app.setNeighbours(o.value)" />{{ o.label }}
+        </label>
+      }
+    </div>
+    <span class="text-xs leading-normal text-mute">
+      How much backdrop shows through the hidden pages.@if (!mobile) { The preview follows.} They stay unreadable{{ mobile ? '.' : ' at every step.' }}
+    </span>
+  </div>
+</ng-template>
+
+<div [class]="mobile ? 'flex flex-col gap-3 px-4 pt-4 pb-[18px]' : 'grid grid-cols-[minmax(0,1fr)_380px] gap-8 px-8 pt-6 pb-6'">
+  <div class="flex min-w-0 flex-col gap-4" [class.contents]="mobile">
+    <div class="flex items-baseline gap-3">
+      <h2 class="dsp" [class]="mobile ? 'text-base' : 'text-lg'" id="bd-title">Backdrop</h2>
+      @if (!mobile) { <span class="text-[13px] text-dim">What sits behind the pages.</span> }
+    </div>
+
+    <div role="radiogroup" aria-labelledby="bd-title" class="flex">
+      @for (m of modes; track m.value) {
+        <label class="seg" [class.seg-lg]="mobile">
+          <input type="radio" name="bd-mode" class="sr-only" [value]="m.value" [checked]="b.mode === m.value"
+            (change)="darkened.set(null); app.setMode(m.value)" />{{ m.label }}
+        </label>
+      }
+    </div>
+
+    @if (b.mode === 'solid') {
+      @if (!mobile) { <p class="text-[13px] leading-normal text-dim">One flat print colour. Ink is the dotted ground you know.</p> }
+      <div role="radiogroup" aria-label="Backdrop colour" class="grid grid-cols-7 gap-1.5" [class.gap-2.5]="!mobile">
+        @for (s of solids; track s.id) {
+          <label class="swatch h-[46px]" [style.background]="s.id === 'ink' ? null : s.hex" [class.dot-ground]="s.id === 'ink'" [title]="s.name">
+            <input type="radio" name="bd-solid" class="sr-only" [attr.aria-label]="s.name" [checked]="b.solid === s.id"
+              (change)="darkened.set(null); app.setSolid(s.id)" />
+            @if (b.solid === s.id) { <lucide-icon [img]="icons.check" [size]="18" /> }
+          </label>
+        }
+        <label class="swatch h-[46px]" [class.swatch-new]="b.solid !== 'custom'" [style.background]="b.solid === 'custom' ? b.solidCustom : null" title="Custom colour">
+          <input type="radio" name="bd-solid" class="sr-only" aria-label="Custom colour" [checked]="b.solid === 'custom'" (change)="app.setSolid('custom')" />
+          <lucide-icon [img]="b.solid === 'custom' ? icons.check : icons.plus" [size]="18" />
+        </label>
+      </div>
+      <div class="flex items-center justify-between gap-3">
+        <b>{{ solidName() }}</b>
+        @if (b.solid === 'custom') {
+          <label class="chip">
+            <i [style.background]="b.solidCustom"></i>{{ b.solidCustom }}<span class="text-dim">Change</span>
+            <input type="color" class="sr-only" aria-label="Custom backdrop colour" [value]="b.solidCustom" (change)="setSolidCustom($event)" />
+          </label>
+        } @else {
+          <span class="font-mono text-xs text-dim">{{ solidHex() }}</span>
+        }
+      </div>
+    } @else {
+      <p class="text-[13px] leading-normal text-dim">Two or three colours as halftone dot fields that slide slowly past each other. One loop takes 90 seconds.</p>
+      <div class="flex flex-col gap-2">
+        <span class="lbl" id="drift-title">Preset</span>
+        <div role="radiogroup" aria-labelledby="drift-title" class="grid grid-cols-5" [class]="mobile ? 'gap-1.5' : 'gap-2.5'">
+          @for (d of drifts; track d.id) {
+            <label class="swatch flex-col items-stretch bg-surface-1" [title]="d.note">
+              <input type="radio" name="bd-drift" class="sr-only" [checked]="b.drift === d.id" (change)="pickDrift(d.id)" />
+              <span class="relative block h-14 overflow-hidden" [class.h-11]="mobile"><app-backdrop class="absolute inset-0" [look]="driftLook(d.colours)" [grid]="12" /></span>
+              <span class="px-2 py-1.5 text-left text-[13px] font-bold" [class.px-1.5]="mobile">{{ d.name }}</span>
+            </label>
+          }
+          <label class="swatch flex-col items-stretch" [class.swatch-new]="b.drift !== 'custom'">
+            <input type="radio" name="bd-drift" class="sr-only" [checked]="b.drift === 'custom'" (change)="pickDrift('custom')" />
+            @if (b.drift === 'custom') {
+              <span class="relative block h-14 overflow-hidden" [class.h-11]="mobile"><app-backdrop class="absolute inset-0" [look]="customDriftLook()" [grid]="12" /></span>
+            } @else {
+              <span class="flex h-14 items-center justify-center" [class.h-11]="mobile"><lucide-icon [img]="icons.plus" [size]="18" /></span>
+            }
+            <span class="px-2 py-1.5 text-left text-[13px] font-bold text-paper" [class.px-1.5]="mobile">Custom</span>
+          </label>
+        </div>
+      </div>
+      <div class="flex flex-col gap-2">
+        <span class="lbl">Colours in {{ driftName() }}</span>
+        <div class="flex flex-wrap items-center gap-2.5">
+          @for (c of trio(); track $index; let i = $index) {
+            <label class="chip">
+              <i [style.background]="c"></i>{{ c }}
+              <input type="color" class="sr-only" [attr.aria-label]="roles[i] + ', ' + c + '. Change'" [value]="c" (change)="setDriftColour($any(i), $event)" />
+            </label>
+          }
+        </div>
+        @if (b.drift !== 'custom') { <span class="text-xs text-mute">Changing one makes it a Custom preset.</span> }
+      </div>
+    }
+    @if (darkened(); as hex) {
+      <p class="text-xs text-gold" role="status" animate.enter="a-fade-in">Too light for a backdrop: darkened to {{ hex }}, so the page stays in front.</p>
+    }
+
+    @if (mobile) {
+      <ng-container [ngTemplateOutlet]="preview" />
+      <ng-container [ngTemplateOutlet]="neighbours" />
+    }
+  </div>
+
+  @if (!mobile) {
+    <div class="flex flex-col gap-2">
+      <span class="lbl">Live preview</span>
+      <ng-container [ngTemplateOutlet]="preview" />
+      <span class="text-xs leading-normal text-mute">The page always stays in front: backdrops are held to a dark range. Panels and bars stay ink.</span>
+      <div class="pt-2.5"><ng-container [ngTemplateOutlet]="neighbours" /></div>
+    </div>
+  }
+</div>
+
+<app-motion-tab class="border-t-2 border-line" />
