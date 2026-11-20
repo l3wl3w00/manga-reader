@@ -1,5 +1,5 @@
 import { Component, inject } from '@angular/core';
-import { LucideAngularModule } from 'lucide-angular';
+import { LucideDynamicIcon } from '@lucide/angular';
 import { ReaderService } from '../../services/reader.service';
 import { UiService } from '../../services/ui.service';
 import { ICONS } from '../../ui/icons';
@@ -24,7 +24,7 @@ import { SwipeCueComponent } from '../../mobile/swipe-cue/swipe-cue.component';
 @Component({
   selector: 'app-mobile-layout',
   imports: [
-    LucideAngularModule, SheetComponent, ReaderComponent, WelcomeComponent, NotFoundComponent, LoadingCardComponent,
+    LucideDynamicIcon, SheetComponent, ReaderComponent, WelcomeComponent, NotFoundComponent, LoadingCardComponent,
     EndOfChapterComponent, HudComponent, JumpFormComponent, SettingsComponent, MobileHeaderComponent,
     MobileTopBarComponent, MobileNavComponent, GestureLayerComponent, LibrarySheetComponent, SwipeCueComponent,
   ],
@@ -63,7 +63,7 @@ import { SwipeCueComponent } from '../../mobile/swipe-cue/swipe-cue.component';
       <app-sheet label="Jump to" (closed)="ui.closeSheet()">
         <div sheetHeader class="flex items-center border-b-2 border-line pt-1 pb-2.5 pl-5 pr-2">
           <h1 class="dsp mr-auto text-xl">Jump to</h1>
-          <button class="ib ib-lg text-paper" (click)="ui.closeSheet()" aria-label="Close"><lucide-icon [img]="icons.x" [size]="20" /></button>
+          <button class="ib ib-lg text-paper" (click)="ui.closeSheet()" aria-label="Close"><svg [lucideIcon]="icons.x" [size]="20" /></button>
         </div>
         <app-jump-form variant="sheet" class="scroll-thin overflow-y-auto px-5 pt-[18px] pb-[26px]" (submitted)="ui.closeSheet()" />
       </app-sheet>

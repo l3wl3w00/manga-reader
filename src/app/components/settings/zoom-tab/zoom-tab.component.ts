@@ -1,6 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
-import { LucideAngularModule } from 'lucide-angular';
+import { LucideDynamicIcon } from '@lucide/angular';
 import { ZoomService } from '../../../services/zoom.service';
 import { KeybindingsService } from '../../../services/keybindings.service';
 import { LayoutService } from '../../../services/layout.service';
@@ -15,7 +15,7 @@ const STEP = 5;
 /** Auto-fit settings with a live preview of how a page opens in this window. */
 @Component({
   selector: 'app-zoom-tab',
-  imports: [LucideAngularModule, NgTemplateOutlet, PageArtComponent],
+  imports: [LucideDynamicIcon, NgTemplateOutlet, PageArtComponent],
   host: { class: 'block', '(window:resize)': 'viewport.set({ w: $any($event.target).innerWidth, h: $any($event.target).innerHeight })' },
   templateUrl: './zoom-tab.component.html',
 })

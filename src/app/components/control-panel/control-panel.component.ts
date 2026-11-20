@@ -1,5 +1,5 @@
 import { Component, inject } from '@angular/core';
-import { LucideAngularModule } from 'lucide-angular';
+import { LucideDynamicIcon } from '@lucide/angular';
 import { UiService } from '../../services/ui.service';
 import { ICONS } from '../../ui/icons';
 import { JumpFormComponent } from '../jump-form/jump-form.component';
@@ -7,7 +7,7 @@ import { JumpFormComponent } from '../jump-form/jump-form.component';
 /** Desktop control panel: brand header with the panel lock (pin), and the jump form. */
 @Component({
   selector: 'app-control-panel',
-  imports: [LucideAngularModule, JumpFormComponent],
+  imports: [LucideDynamicIcon, JumpFormComponent],
   host: { class: 'block shrink-0' },
   template: `
     <section class="pnl" [class.border-dashed]="ui.peekOnly()" [class.shadow-none]="ui.peekOnly()" aria-label="Controls">
@@ -18,13 +18,13 @@ import { JumpFormComponent } from '../jump-form/jump-form.component';
           <span class="tag text-gold mr-1" animate.enter="a-pop-in">Peek</span>
           <button class="ib" (click)="ui.panelsLocked.set(true)" aria-pressed="false"
             aria-label="Panels hide while reading. Lock them" title="Lock panels">
-            <lucide-icon [img]="icons.pinOff" [size]="18" />
+            <svg [lucideIcon]="icons.pinOff" [size]="18" />
           </button>
         } @else {
           <button class="ib" [class.ib-on]="ui.panelsLocked()" (click)="ui.togglePanels()" [attr.aria-pressed]="ui.panelsLocked()"
             [attr.aria-label]="ui.panelsLocked() ? 'Panels locked. Unlock to hide while reading' : 'Lock panels'"
             [title]="ui.panelsLocked() ? 'Unlock panels' : 'Lock panels'">
-            <lucide-icon [img]="ui.panelsLocked() ? icons.pin : icons.pinOff" [size]="18" />
+            <svg [lucideIcon]="ui.panelsLocked() ? icons.pin : icons.pinOff" [size]="18" />
           </button>
         }
       </header>

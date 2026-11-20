@@ -1,5 +1,5 @@
 import { Component, computed, effect, inject, signal } from '@angular/core';
-import { LucideAngularModule } from 'lucide-angular';
+import { LucideDynamicIcon } from '@lucide/angular';
 import { ReaderService } from '../../services/reader.service';
 import { LibraryService } from '../../services/library.service';
 import { ZoomService } from '../../services/zoom.service';
@@ -19,7 +19,7 @@ const pad2 = (n: number) => String(n).padStart(2, '0');
 /** Reading overlays: folio, key hints, zoom chip, minimap, zoom hints and the progress rule. */
 @Component({
   selector: 'app-hud',
-  imports: [LucideAngularModule, ZoomChipComponent, MinimapComponent],
+  imports: [LucideDynamicIcon, ZoomChipComponent, MinimapComponent],
   host: { class: 'contents' },
   templateUrl: './hud.component.html',
 })

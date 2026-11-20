@@ -40,12 +40,12 @@
                   [attr.aria-pressed]="!!e.favourite"
                   (click)="toggleFavourite(e.slug, $event)" (keydown.enter)="$event.stopPropagation()"
                   [attr.aria-label]="(e.favourite ? 'Unfavourite ' : 'Favourite ') + lib.formatName(e.slug)">
-                  <lucide-icon [img]="icons.star" [size]="18" />
+                  <svg [lucideIcon]="icons.star" [size]="18" />
                 </button>
                 <button class="ib hidden group-focus-within:inline-flex group-hover:inline-flex hover:bg-shu hover:text-ink"
                   (click)="requestRemove(e.slug, $event)" (keydown.enter)="$event.stopPropagation()"
                   [attr.aria-label]="'Remove ' + lib.formatName(e.slug)">
-                  <lucide-icon [img]="icons.trash" [size]="18" />
+                  <svg [lucideIcon]="icons.trash" [size]="18" />
                 </button>
               </div>
             </div>
@@ -57,7 +57,7 @@
             <span class="h-12 w-[34px] border-2 border-dashed border-line"></span>
             <span class="h-12 w-[34px] border-2 border-dashed border-line"></span>
             <span class="flex h-12 w-[34px] items-center justify-center border-2 border-dashed border-mute text-mute">
-              <lucide-icon [img]="icons.plus" [size]="18" />
+              <svg [lucideIcon]="icons.plus" [size]="18" />
             </span>
           </div>
           <h3 class="dsp text-base">Empty shelf</h3>

@@ -1,5 +1,5 @@
 import { Component, computed, inject } from '@angular/core';
-import { LucideAngularModule } from 'lucide-angular';
+import { LucideDynamicIcon } from '@lucide/angular';
 import { ReaderService } from '../../services/reader.service';
 import { LibraryService } from '../../services/library.service';
 import { LayoutService } from '../../services/layout.service';
@@ -10,7 +10,7 @@ import { searchUrl } from '../jump-form/jump-form.component';
 /** The manga, chapter or first page does not exist. */
 @Component({
   selector: 'app-not-found',
-  imports: [LucideAngularModule],
+  imports: [LucideDynamicIcon],
   host: { class: 'flex flex-col justify-center-safe', '[class.min-h-0]': 'layout.mobile()' },
   template: `
     @let mobile = layout.mobile();
@@ -31,8 +31,8 @@ import { searchUrl } from '../jump-form/jump-form.component';
       </ul>
       @if (!mobile) {
         <div class="flex flex-wrap gap-3.5 pt-2">
-          <button class="btn btn-primary btn-lg" (click)="search()">Search on MangaFreak<lucide-icon [img]="icons.externalLink" [size]="18" /></button>
-          <button class="btn btn-lg" (click)="reader.retry()"><lucide-icon [img]="icons.reset" [size]="18" />Try again</button>
+          <button class="btn btn-primary btn-lg" (click)="search()">Search on MangaFreak<svg [lucideIcon]="icons.externalLink" [size]="18" /></button>
+          <button class="btn btn-lg" (click)="reader.retry()"><svg [lucideIcon]="icons.reset" [size]="18" />Try again</button>
           @if (backLabel(); as label) {
             <button class="btn btn-lg btn-ghost" (click)="reader.backToLastGood()">{{ label }}</button>
           }
@@ -41,9 +41,9 @@ import { searchUrl } from '../jump-form/jump-form.component';
     </div>
     @if (mobile) {
       <div class="flex shrink-0 flex-col gap-3 px-5 pt-5 pb-7">
-        <button class="btn btn-primary btn-lg mr-1" (click)="search()">Search on MangaFreak<lucide-icon [img]="icons.externalLink" [size]="18" /></button>
+        <button class="btn btn-primary btn-lg mr-1" (click)="search()">Search on MangaFreak<svg [lucideIcon]="icons.externalLink" [size]="18" /></button>
         <div class="mt-1 flex gap-3">
-          <button class="btn btn-lg flex-1" (click)="reader.retry()"><lucide-icon [img]="icons.reset" [size]="18" />Try again</button>
+          <button class="btn btn-lg flex-1" (click)="reader.retry()"><svg [lucideIcon]="icons.reset" [size]="18" />Try again</button>
           <button class="btn btn-lg flex-1" (click)="ui.openSheet('jump')">Edit entry</button>
         </div>
       </div>

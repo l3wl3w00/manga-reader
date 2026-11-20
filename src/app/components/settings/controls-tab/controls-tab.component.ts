@@ -1,5 +1,5 @@
 import { Component, ElementRef, afterRenderEffect, computed, inject, signal, viewChild } from '@angular/core';
-import { LucideAngularModule } from 'lucide-angular';
+import { LucideDynamicIcon } from '@lucide/angular';
 import { LayoutService } from '../../../services/layout.service';
 import { KeybindingsService } from '../../../services/keybindings.service';
 import { ICONS } from '../../../ui/icons';
@@ -9,14 +9,14 @@ import { KeybindingsTabComponent } from '../keybindings-tab/keybindings-tab.comp
  *  keyboard (or at least a fine pointer) is around. */
 @Component({
   selector: 'app-controls-tab',
-  imports: [LucideAngularModule, KeybindingsTabComponent],
+  imports: [LucideDynamicIcon, KeybindingsTabComponent],
   host: { class: 'flex min-h-full flex-col' },
   template: `
     @if (keys()) {
       <div class="flex h-13 shrink-0 items-center border-b border-line pl-1.5">
         <button #back type="button" class="flex h-11 items-center gap-1.5 px-2.5 text-[13px] font-bold uppercase tracking-[0.1em] text-dim hover:text-paper"
           (click)="keys.set(false)">
-          <lucide-icon [img]="icons.chevronLeft" [size]="18" />Controls
+          <svg [lucideIcon]="icons.chevronLeft" [size]="18" />Controls
         </button>
         <span class="lbl ml-auto pr-5">Keybindings</span>
       </div>
@@ -25,18 +25,18 @@ import { KeybindingsTabComponent } from '../keybindings-tab/keybindings-tab.comp
       <div class="flex shrink-0 flex-col gap-2 px-5 pt-4 pb-3.5">
         <span class="lbl">Turning pages</span>
         <div class="flex h-[92px] items-center justify-between border-2 border-paper bg-ink px-4" aria-hidden="true">
-          <lucide-icon [img]="icons.chevronsLeft" [size]="32" />
+          <svg [lucideIcon]="icons.chevronsLeft" [size]="32" />
           <div class="flex flex-col items-center gap-1">
             <span class="dsp text-lg">Swipe</span>
             <span class="text-xs text-dim">sideways, anywhere on the page</span>
           </div>
-          <lucide-icon [img]="icons.chevronsRight" [size]="32" />
+          <svg [lucideIcon]="icons.chevronsRight" [size]="32" />
         </div>
       </div>
       <ul class="border-t border-line">
         @for (g of gestures; track g.title; let i = $index) {
           <li class="flex min-h-15 items-center gap-3.5 border-b border-line px-4 py-[9px] a-row-in" [style.--i]="i">
-            <span class="flex size-11 shrink-0 items-center justify-center border-2 border-paper bg-ink"><lucide-icon [img]="g.icon" [size]="18" /></span>
+            <span class="flex size-11 shrink-0 items-center justify-center border-2 border-paper bg-ink"><svg [lucideIcon]="g.icon" [size]="18" /></span>
             <div>
               <div class="text-[15px] font-bold">{{ g.title }}</div>
               <div class="text-[13px] text-dim">{{ g.text }}</div>
@@ -51,12 +51,12 @@ import { KeybindingsTabComponent } from '../keybindings-tab/keybindings-tab.comp
         </div>
         <button type="button" class="flex min-h-15 w-full items-center gap-3.5 border-b border-line py-[9px] pl-4 pr-2 text-left transition-colors hover:bg-surface-2"
           (click)="keys.set(true)">
-          <span class="flex size-11 shrink-0 items-center justify-center border-2 border-paper bg-ink"><lucide-icon [img]="icons.keyboard" [size]="18" /></span>
+          <span class="flex size-11 shrink-0 items-center justify-center border-2 border-paper bg-ink"><svg [lucideIcon]="icons.keyboard" [size]="18" /></span>
           <span class="flex-1">
             <span class="block text-[15px] font-bold">{{ presetName() }}</span>
             <span class="block text-[13px] text-dim">{{ actionCount() }} actions. Change preset or record keys.</span>
           </span>
-          <lucide-icon [img]="icons.chevronRight" [size]="22" class="mr-1.5" />
+          <svg [lucideIcon]="icons.chevronRight" [size]="22" class="mr-1.5" />
         </button>
       }
       <p class="flex-1 px-4 pt-3 pb-4 text-xs text-mute">The bar's Page and Chapter buttons carry on into the next chapter.</p>

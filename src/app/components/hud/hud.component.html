@@ -15,9 +15,9 @@
     }
     @if (zoomed && !shown && !ui.panHintDismissed()) {
       <div class="pnl fixed bottom-5 left-4 z-30 flex-row items-center gap-2 py-0 pl-3 pr-0 text-xs shadow-hard-sm" animate.enter="a-rise-in" animate.leave="a-fade-out">
-        <lucide-icon [img]="icons.hand" [size]="16" />Drag to pan · double-tap to fit
+        <svg [lucideIcon]="icons.hand" [size]="16" />Drag to pan · double-tap to fit
         <button type="button" class="ib size-11" aria-label="Close hint" (click)="ui.dismissPanHint()">
-          <lucide-icon [img]="icons.x" [size]="16" />
+          <svg [lucideIcon]="icons.x" [size]="16" />
         </button>
       </div>
     }
@@ -45,11 +45,11 @@
         animate.enter="a-pop-in" animate.leave="a-pop-out" />
       @if (!shown && !ui.panHintDismissed()) {
         <div class="pnl fixed bottom-6 z-30 flex-row items-center gap-3.5 py-1 pl-3 pr-1 text-xs shadow-hard-sm" [style.left.px]="inFrame().left" animate.enter="a-rise-in" animate.leave="a-fade-out">
-          <span class="flex items-center gap-1.5"><lucide-icon [img]="icons.hand" [size]="16" />Drag to pan</span>
+          <span class="flex items-center gap-1.5"><svg [lucideIcon]="icons.hand" [size]="16" />Drag to pan</span>
           <span class="text-dim">Wheel to zoom</span>
           <span class="flex items-center gap-1.5"><span class="key key-sm">{{ kb.keyFor('jumpVert') }}</span><span class="text-dim">jump top / bottom</span></span>
           <button type="button" class="ib size-8" aria-label="Close hint" title="Close hint" (click)="ui.dismissPanHint()">
-            <lucide-icon [img]="icons.x" [size]="14" />
+            <svg [lucideIcon]="icons.x" [size]="14" />
           </button>
         </div>
       }

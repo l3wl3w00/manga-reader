@@ -1,5 +1,5 @@
 import { Component, DestroyRef, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
-import { LucideAngularModule } from 'lucide-angular';
+import { LucideDynamicIcon } from '@lucide/angular';
 import { ReaderService } from '../../services/reader.service';
 import { ZoomService, ZOOM_STEP, DragStart } from '../../services/zoom.service';
 import { LayoutService } from '../../services/layout.service';
@@ -39,7 +39,7 @@ const pad2 = (n: number) => String(n).padStart(2, '0');
  *  and clicks on the page (lock or unlock the panels). Mobile input comes from the gesture layer above it. */
 @Component({
   selector: 'app-reader',
-  imports: [PageArtComponent, TinyPageDirective, LucideAngularModule],
+  imports: [PageArtComponent, TinyPageDirective, LucideDynamicIcon],
   host: {
     class: 'fixed inset-0 block',
     'data-stage': '',
@@ -104,13 +104,13 @@ const pad2 = (n: number) => String(n).padStart(2, '0');
                         <div class="absolute flex flex-col items-start gap-5 px-6 pt-[8%]" [style.left.px]="vis.from" [style.width.px]="vis.width">
                           <span class="tag text-dim">End of chapter {{ it.chapter - 1 }}</span>
                           <span class="dsp" [style.font-size.px]="teaserSize(vis.width)">Chapter<br />{{ it.chapter }}</span>
-                          <span class="btn btn-primary btn-lg pointer-events-none">Start<lucide-icon [img]="icons.arrowRight" [size]="20" /></span>
+                          <span class="btn btn-primary btn-lg pointer-events-none">Start<svg [lucideIcon]="icons.arrowRight" [size]="20" /></span>
                         </div>
                       } @else if (!mobile) {
                         <!-- Zoomed in, only a strip shows: a chevron and the chapter, like the hover hint. -->
                         <div class="absolute top-1/2 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-2 text-paper"
                           [style.left.px]="vis.from + vis.width / 2">
-                          <lucide-icon [img]="icons.chevronsRight" [size]="32" />
+                          <svg [lucideIcon]="icons.chevronsRight" [size]="32" />
                           <span class="dsp text-sm leading-tight text-center">Ch<br />{{ it.chapter }}</span>
                         </div>
                       }
@@ -147,8 +147,8 @@ const pad2 = (n: number) => String(n).padStart(2, '0');
                 [attr.aria-label]="label(it)" (click)="act(it, $event)">
                 @if (it.kind !== 'teaser' && hint(it); as h) {
                   <span class="nb-hint" [style.left.px]="h.x">
-                    <lucide-icon class="nb-arrow" [style.--nudge]="it.k < 0 ? '4px' : '-4px'"
-                      [img]="it.k < 0 ? icons.chevronLeft : icons.chevronRight" [size]="h.full ? 72 : 40" [strokeWidth]="1.5" />
+                    <svg class="nb-arrow" [style.--nudge]="it.k < 0 ? '4px' : '-4px'"
+                      [lucideIcon]="it.k < 0 ? icons.chevronLeft : icons.chevronRight" [size]="h.full ? 72 : 40" [strokeWidth]="1.5" />
                     @if (h.full) {
                       <span class="dsp text-lg">Page {{ pad2(it.page) }}</span>
                       <span class="tag bg-ink">Page only</span>

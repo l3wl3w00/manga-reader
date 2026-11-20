@@ -3,7 +3,7 @@
   <div sheetHeader class="flex items-center border-b-2 border-paper pt-1 pb-2.5 pl-5 pr-2">
     <h1 class="dsp text-xl">Library</h1>
     <span class="ml-3 mr-auto font-mono text-xs text-mute">{{ count }} {{ count === 1 ? 'title' : 'titles' }}</span>
-    <button class="ib ib-lg text-paper" (click)="ui.closeSheet()" aria-label="Close"><lucide-icon [img]="icons.x" [size]="20" /></button>
+    <button class="ib ib-lg text-paper" (click)="ui.closeSheet()" aria-label="Close"><svg [lucideIcon]="icons.x" [size]="20" /></button>
   </div>
 
   @if (count) {
@@ -22,11 +22,11 @@
               <button class="flex flex-1 flex-col items-center justify-center gap-1.5 bg-gold text-[11px] font-bold uppercase tracking-[0.08em] text-ink"
                 (click)="favourite(e.slug)"
                 [attr.aria-label]="(e.favourite ? 'Unfavourite ' : 'Favourite ') + lib.formatName(e.slug)">
-                <lucide-icon [img]="icons.star" [size]="20" />{{ e.favourite ? 'Unfavourite' : 'Favourite' }}
+                <svg [lucideIcon]="icons.star" [size]="20" />{{ e.favourite ? 'Unfavourite' : 'Favourite' }}
               </button>
               <button class="flex flex-1 flex-col items-center justify-center gap-1.5 bg-shu text-[11px] font-bold uppercase tracking-[0.08em] text-ink"
                 (click)="askRemove(e)" [attr.aria-label]="'Remove ' + lib.formatName(e.slug)">
-                <lucide-icon [img]="icons.trash" [size]="20" />Remove
+                <svg [lucideIcon]="icons.trash" [size]="20" />Remove
               </button>
             </div>
             <div class="relative flex min-h-[103px] touch-pan-y items-center gap-3 py-3 pl-5"
@@ -42,7 +42,7 @@
               @if (e.favourite) {
                 <button class="ib ib-lg text-gold [&_svg]:fill-current" (click)="favourite(e.slug)" (pointerdown)="$event.stopPropagation()"
                   [attr.aria-label]="'Unfavourite ' + lib.formatName(e.slug)">
-                  <lucide-icon [img]="icons.star" [size]="20" />
+                  <svg [lucideIcon]="icons.star" [size]="20" />
                 </button>
               }
             </div>
@@ -55,7 +55,7 @@
       <div class="flex gap-2" aria-hidden="true">
         <span class="h-[78px] w-14 border-2 border-dashed border-line"></span>
         <span class="h-[78px] w-14 border-2 border-dashed border-line"></span>
-        <span class="flex h-[78px] w-14 items-center justify-center border-2 border-dashed border-mute text-mute"><lucide-icon [img]="icons.plus" [size]="20" /></span>
+        <span class="flex h-[78px] w-14 items-center justify-center border-2 border-dashed border-mute text-mute"><svg [lucideIcon]="icons.plus" [size]="20" /></span>
       </div>
       <h2 class="dsp text-[26px]">Empty shelf</h2>
       <p class="text-[15px] leading-normal text-dim">Start reading a manga and it lands here on its own, with your place in every chapter.</p>
@@ -74,7 +74,7 @@
       <p class="text-[15px] leading-normal text-dim">
         It leaves your library and forgets your place: chapter {{ r.lastChapter ?? 1 }}, page {{ r.lastPage ?? 1 }}. Reading it again adds it back from page 1.
       </p>
-      <button class="btn btn-primary btn-lg my-1 mr-1" (click)="confirmRemove()"><lucide-icon [img]="icons.trash" [size]="18" />Remove</button>
+      <button class="btn btn-primary btn-lg my-1 mr-1" (click)="confirmRemove()"><svg [lucideIcon]="icons.trash" [size]="18" />Remove</button>
       <button class="btn btn-lg" (click)="removing.set(null)">Keep it</button>
     </div>
   </app-sheet>

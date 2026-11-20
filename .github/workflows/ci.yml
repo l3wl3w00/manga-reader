@@ -23,7 +23,6 @@ jobs:
         with:
           node-version: 26
           cache: npm
-      # .npmrc sets legacy-peer-deps: lucide-angular 1.0.0 declares peers only up to Angular 21.
       - run: npm ci
       - run: npx ng test --watch=false
       - run: npm run build:single

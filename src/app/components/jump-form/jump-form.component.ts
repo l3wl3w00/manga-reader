@@ -1,5 +1,5 @@
 import { Component, computed, inject, input, linkedSignal, output } from '@angular/core';
-import { LucideAngularModule } from 'lucide-angular';
+import { LucideDynamicIcon } from '@lucide/angular';
 import { ReaderService } from '../../services/reader.service';
 import { ZoomService } from '../../services/zoom.service';
 import { UiService } from '../../services/ui.service';
@@ -20,7 +20,7 @@ export function chapterUrl(manga: string, chapter: number) {
  *  sheet and welcome: mobile, where the steppers edit a draft that Go applies. */
 @Component({
   selector: 'app-jump-form',
-  imports: [LucideAngularModule],
+  imports: [LucideDynamicIcon],
   host: { class: 'flex flex-col', '[class.gap-3]': "variant() === 'panel'", '[class.gap-4]': "variant() !== 'panel'" },
   templateUrl: './jump-form.component.html',
 })

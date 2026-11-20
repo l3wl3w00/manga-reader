@@ -1,5 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { LucideAngularModule } from 'lucide-angular';
+import { LucideDynamicIcon } from '@lucide/angular';
 import { LibraryEntry, LibraryService } from '../../services/library.service';
 import { ReaderService } from '../../services/reader.service';
 import { UiService } from '../../services/ui.service';
@@ -18,7 +18,7 @@ const AXIS_SLOP = 8;
  *  and Remove asks in a second sheet. */
 @Component({
   selector: 'app-library-sheet',
-  imports: [LucideAngularModule, SheetComponent, CoverComponent, LibraryEntryComponent],
+  imports: [LucideDynamicIcon, SheetComponent, CoverComponent, LibraryEntryComponent],
   // The host is what the layout removes, so it carries the leave; the sheets inside animate out with it.
   host: { class: 'fixed inset-0 z-[80]', 'animate.leave': 'x-leave' },
   templateUrl: './library-sheet.component.html',

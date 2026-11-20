@@ -1,5 +1,5 @@
 import { Component, DestroyRef, ElementRef, afterEveryRender, afterNextRender, computed, inject, linkedSignal, signal, viewChild } from '@angular/core';
-import { LucideAngularModule } from 'lucide-angular';
+import { LucideDynamicIcon } from '@lucide/angular';
 import { UiService } from '../../services/ui.service';
 import { LayoutService } from '../../services/layout.service';
 import { KeybindingsService } from '../../services/keybindings.service';
@@ -17,7 +17,7 @@ const TAB_LABELS: Record<Tab, string> = { keys: 'Keybindings', zoom: 'Zoom', app
  *  keybindings inside when a keyboard is around, Zoom, Appearance). */
 @Component({
   selector: 'app-settings',
-  imports: [LucideAngularModule, KeybindingsTabComponent, ZoomTabComponent, AppearanceTabComponent, ControlsTabComponent],
+  imports: [LucideDynamicIcon, KeybindingsTabComponent, ZoomTabComponent, AppearanceTabComponent, ControlsTabComponent],
   host: { class: 'fixed inset-0 z-[100]', 'animate.leave': 'x-leave', '(keydown.tab)': 'trapTab($event)', '(keydown.shift.tab)': 'trapTab($event)' },
   template: `
     @let mobile = layout.mobile();
@@ -32,7 +32,7 @@ const TAB_LABELS: Record<Tab, string> = { keys: 'Keybindings', zoom: 'Zoom', app
       @if (mobile) {
         <header class="flex h-15 shrink-0 items-center pl-5 pr-1.5">
           <h1 class="dsp mr-auto text-xl">Settings</h1>
-          <button class="ib ib-lg text-paper" (click)="ui.closeSettings()" aria-label="Close settings"><lucide-icon [img]="icons.x" [size]="20" /></button>
+          <button class="ib ib-lg text-paper" (click)="ui.closeSettings()" aria-label="Close settings"><svg [lucideIcon]="icons.x" [size]="20" /></button>
         </header>
       }
       <div class="flex shrink-0 items-end border-b-2 border-paper" [class]="mobile ? 'px-2' : 'h-14 pl-1.5 pr-2.5'">
@@ -43,7 +43,7 @@ const TAB_LABELS: Record<Tab, string> = { keys: 'Keybindings', zoom: 'Zoom', app
           }
         </div>
         @if (!mobile) {
-          <button class="ib size-10 self-center" (click)="ui.closeSettings()" aria-label="Close settings"><lucide-icon [img]="icons.x" [size]="20" /></button>
+          <button class="ib size-10 self-center" (click)="ui.closeSettings()" aria-label="Close settings"><svg [lucideIcon]="icons.x" [size]="20" /></button>
         }
       </div>
       <!-- Fades out at its foot while there is more below the fold. -->

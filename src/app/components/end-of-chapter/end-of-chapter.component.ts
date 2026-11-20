@@ -1,5 +1,5 @@
 import { Component, inject } from '@angular/core';
-import { LucideAngularModule } from 'lucide-angular';
+import { LucideDynamicIcon } from '@lucide/angular';
 import { ReaderService } from '../../services/reader.service';
 import { KeybindingsService } from '../../services/keybindings.service';
 import { LayoutService } from '../../services/layout.service';
@@ -9,7 +9,7 @@ import { ICONS } from '../../ui/icons';
  *  Stamped onto the dimmed last page on desktop, a bottom sheet on mobile. */
 @Component({
   selector: 'app-end-of-chapter',
-  imports: [LucideAngularModule],
+  imports: [LucideDynamicIcon],
   host: { class: 'fixed inset-0 z-40', 'animate.leave': 'x-leave' },
   template: `
     @let mobile = layout.mobile();
@@ -27,7 +27,7 @@ import { ICONS } from '../../ui/icons';
         </p>
         <div class="flex gap-3.5 pt-1.5" [class.flex-col]="mobile">
           <button class="btn btn-primary btn-lg" [class.flex-1]="!mobile" [class.mr-1]="mobile" (click)="reader.nextChapter()">
-            Chapter {{ reader.chapter() + 1 }}<lucide-icon [img]="icons.arrowRight" [size]="18" />
+            Chapter {{ reader.chapter() + 1 }}<svg [lucideIcon]="icons.arrowRight" [size]="18" />
           </button>
           <button class="btn btn-lg" (click)="reader.backFromEnd()">Back to page {{ reader.totalPages() }}</button>
         </div>

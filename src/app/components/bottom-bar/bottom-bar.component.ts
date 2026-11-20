@@ -1,5 +1,5 @@
 import { Component, computed, inject } from '@angular/core';
-import { LucideAngularModule } from 'lucide-angular';
+import { LucideDynamicIcon } from '@lucide/angular';
 import { ReaderService } from '../../services/reader.service';
 import { ICONS } from '../../ui/icons';
 
@@ -10,7 +10,7 @@ export const MAX_TICKS = 24;
 /** Desktop page navigation. These buttons roll into the next / previous chapter. */
 @Component({
   selector: 'app-bottom-bar',
-  imports: [LucideAngularModule],
+  imports: [LucideDynamicIcon],
   host: { class: 'block' },
   templateUrl: './bottom-bar.component.html',
 })

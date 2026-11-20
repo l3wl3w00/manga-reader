@@ -56,12 +56,12 @@
           <label class="swatch h-[46px]" [style.background]="s.id === 'ink' ? null : s.hex" [class.dot-ground]="s.id === 'ink'" [title]="s.name">
             <input type="radio" name="bd-solid" class="sr-only" [attr.aria-label]="s.name" [checked]="b.solid === s.id"
               (change)="darkened.set(null); app.setSolid(s.id)" />
-            @if (b.solid === s.id) { <lucide-icon [img]="icons.check" [size]="18" /> }
+            @if (b.solid === s.id) { <svg [lucideIcon]="icons.check" [size]="18" /> }
           </label>
         }
         <label class="swatch h-[46px]" [class.swatch-new]="b.solid !== 'custom'" [style.background]="b.solid === 'custom' ? b.solidCustom : null" title="Custom colour">
           <input type="radio" name="bd-solid" class="sr-only" aria-label="Custom colour" [checked]="b.solid === 'custom'" (change)="app.setSolid('custom')" />
-          <lucide-icon [img]="b.solid === 'custom' ? icons.check : icons.plus" [size]="18" />
+          <svg [lucideIcon]="b.solid === 'custom' ? icons.check : icons.plus" [size]="18" />
         </label>
       </div>
       <div class="flex items-center justify-between gap-3">
@@ -92,7 +92,7 @@
             @if (b.drift === 'custom') {
               <span class="relative block h-14 overflow-hidden" [class.h-11]="mobile"><app-backdrop class="absolute inset-0" [look]="customDriftLook()" [grid]="12" /></span>
             } @else {
-              <span class="flex h-14 items-center justify-center" [class.h-11]="mobile"><lucide-icon [img]="icons.plus" [size]="18" /></span>
+              <span class="flex h-14 items-center justify-center" [class.h-11]="mobile"><svg [lucideIcon]="icons.plus" [size]="18" /></span>
             }
             <span class="px-2 py-1.5 text-left text-[13px] font-bold text-paper" [class.px-1.5]="mobile">Custom</span>
           </label>

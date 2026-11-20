@@ -1,5 +1,5 @@
 import { Component, ElementRef, afterRenderEffect, computed, inject, signal, viewChild } from '@angular/core';
-import { LucideAngularModule } from 'lucide-angular';
+import { LucideDynamicIcon } from '@lucide/angular';
 import {
   ACTION_GROUPS, ACTION_LABELS, HOLD_ACTIONS, KeybindingsService, PRESETS, formatKey,
 } from '../../../services/keybindings.service';
@@ -11,7 +11,7 @@ export const PRESET_NAME_MAX = 24;
 /** Key binding editor: presets (with renaming), recording, and conflicts. */
 @Component({
   selector: 'app-keybindings-tab',
-  imports: [LucideAngularModule],
+  imports: [LucideDynamicIcon],
   host: { class: 'flex flex-col' },
   templateUrl: './keybindings-tab.component.html',
 })

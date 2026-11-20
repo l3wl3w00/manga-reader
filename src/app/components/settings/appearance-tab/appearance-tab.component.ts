@@ -1,6 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
-import { LucideAngularModule } from 'lucide-angular';
+import { LucideDynamicIcon } from '@lucide/angular';
 import { LayoutService } from '../../../services/layout.service';
 import {
   AppearanceService, BackdropLook, BackdropMode, DRIFTS, DriftId, NeighbourOpacity, SOLIDS, Trio, driftColours,
@@ -15,7 +15,7 @@ const COLOUR_ROLES = ['Base colour', 'Second colour', 'Third colour'] as const;
 /** Backdrop (Solid or Drift), how see-through the hidden neighbour pages are, with a live preview; and Motion. */
 @Component({
   selector: 'app-appearance-tab',
-  imports: [LucideAngularModule, NgTemplateOutlet, BackdropComponent, PageArtComponent, MotionTabComponent],
+  imports: [LucideDynamicIcon, NgTemplateOutlet, BackdropComponent, PageArtComponent, MotionTabComponent],
   host: { class: 'block' },
   templateUrl: './appearance-tab.component.html',
 })

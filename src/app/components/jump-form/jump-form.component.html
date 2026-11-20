@@ -7,12 +7,12 @@
       [attr.aria-invalid]="invalid()" [attr.aria-describedby]="'manga-help-' + variant()" />
     <button type="button" class="btn btn-sq" [class.btn-lg]="large()" [class.btn-ghost]="!invalid() && !large()"
       (click)="search()" aria-label="Search on MangaFreak">
-      <lucide-icon [img]="icons.search" [size]="18" />
+      <svg [lucideIcon]="icons.search" [size]="18" />
     </button>
   </div>
   @if (invalid()) {
     <span [id]="'manga-help-' + variant()" class="flex items-center gap-1.5 text-xs text-gold" animate.enter="a-rise-in">
-      <lucide-icon [img]="icons.alert" [size]="14" />No page at this name, chapter and page.
+      <svg [lucideIcon]="icons.alert" [size]="14" />No page at this name, chapter and page.
     </span>
   } @else if (variant() === 'panel' && !loaded()) {
     <span [id]="'manga-help-' + variant()" class="text-xs text-mute">Spaces become underscores when you press Go.</span>
@@ -24,12 +24,12 @@
     <label class="lbl" [for]="'ch-' + variant()">Chapter</label>
     <div class="stp" [class.stp-lg]="large()">
       <button type="button" (click)="step('ch', -1)" [attr.aria-label]="live() ? 'Previous chapter' : 'Chapter down'">
-        <lucide-icon [img]="icons.minus" [size]="18" />
+        <svg [lucideIcon]="icons.minus" [size]="18" />
       </button>
       <input [id]="'ch-' + variant()" type="text" inputmode="numeric" [value]="chDraft()"
         (input)="setNumber('ch', $any($event.target).value)" (keydown.enter)="onEnter('ch')" />
       <button type="button" (click)="step('ch', 1)" [attr.aria-label]="live() ? 'Next chapter' : 'Chapter up'">
-        <lucide-icon [img]="icons.plus" [size]="18" />
+        <svg [lucideIcon]="icons.plus" [size]="18" />
       </button>
     </div>
   </div>
@@ -39,12 +39,12 @@
     </label>
     <div class="stp" [class.stp-lg]="large()">
       <button type="button" (click)="step('pg', -1)" [attr.aria-label]="live() ? 'Previous page' : 'Page down'">
-        <lucide-icon [img]="icons.minus" [size]="18" />
+        <svg [lucideIcon]="icons.minus" [size]="18" />
       </button>
       <input [id]="'pg-' + variant()" type="text" inputmode="numeric" [value]="pgDraft()"
         (input)="setNumber('pg', $any($event.target).value)" (keydown.enter)="onEnter('pg')" />
       <button type="button" (click)="step('pg', 1)" [attr.aria-label]="live() ? 'Next page' : 'Page up'">
-        <lucide-icon [img]="icons.plus" [size]="18" />
+        <svg [lucideIcon]="icons.plus" [size]="18" />
       </button>
     </div>
   </div>
@@ -59,14 +59,14 @@
     }
     <button type="button" class="btn btn-sq btn-ghost" [attr.aria-disabled]="!loaded()" (click)="openSite()"
       [attr.aria-label]="loaded() ? 'Open chapter on MangaFreak' : 'Open chapter on MangaFreak (nothing loaded)'">
-      <lucide-icon [img]="icons.externalLink" [size]="18" />
+      <svg [lucideIcon]="icons.externalLink" [size]="18" />
     </button>
     <button type="button" class="btn btn-sq" [class.btn-on]="zoom.autoFit()" [class.btn-ghost]="!zoom.autoFit()"
       (click)="zoom.toggleAutoFit()" [attr.aria-pressed]="zoom.autoFit()" aria-label="Auto-fit zoom on page turn" title="Auto-fit zoom on page turn">
-      <lucide-icon [img]="icons.scan" [size]="18" />
+      <svg [lucideIcon]="icons.scan" [size]="18" />
     </button>
     <button type="button" class="btn btn-sq btn-ghost" (click)="openSettings()" aria-label="Settings" title="Settings">
-      <lucide-icon [img]="icons.keyboard" [size]="18" />
+      <svg [lucideIcon]="icons.keyboard" [size]="18" />
     </button>
   </div>
 } @else {
@@ -77,11 +77,11 @@
   <div class="flex flex-col border-t border-line">
     @if (loaded()) {
       <button type="button" class="flex min-h-13 items-center gap-3 border-b border-line text-left font-bold" (click)="openSite()">
-        <lucide-icon [img]="icons.externalLink" [size]="18" />Open chapter {{ reader.chapter() }} on MangaFreak
+        <svg [lucideIcon]="icons.externalLink" [size]="18" />Open chapter {{ reader.chapter() }} on MangaFreak
       </button>
     }
     <div class="flex min-h-14 items-center gap-3">
-      <lucide-icon [img]="icons.scan" [size]="18" />
+      <svg [lucideIcon]="icons.scan" [size]="18" />
       <span class="flex-1 font-bold" id="autofit-label">Auto-fit zoom on page turn</span>
       <button type="button" class="tgl" role="switch" [attr.aria-checked]="zoom.autoFit()" aria-labelledby="autofit-label"
         (click)="zoom.toggleAutoFit()"></button>

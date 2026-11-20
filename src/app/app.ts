@@ -1,5 +1,4 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { LucideIconConfig } from 'lucide-angular';
 import { ReaderService } from './services/reader.service';
 import { LibraryService } from './services/library.service';
 import { ZoomService, PAN_STEP, ZOOM_STEP } from './services/zoom.service';
@@ -38,12 +37,6 @@ export class App implements OnInit {
   protected layout = inject(LayoutService);
   /** Created at start-up so data-motion is on <html> before anything animates. */
   private motion = inject(MotionService);
-
-  constructor() {
-    const icons = inject(LucideIconConfig);
-    icons.size = 18;
-    icons.strokeWidth = 2;
-  }
 
   ngOnInit() {
     const last = this.lib.getLast();

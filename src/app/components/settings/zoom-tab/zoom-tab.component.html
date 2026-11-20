@@ -4,9 +4,9 @@
 
 <ng-template #stepper let-which="which" let-value="value" let-label="label">
   <div class="stp" [class]="mobile ? 'stp-lg' : 'w-[150px]'">
-    <button type="button" (click)="step(which, -1)" [attr.aria-label]="'Less ' + label"><lucide-icon [img]="icons.minus" [size]="18" /></button>
+    <button type="button" (click)="step(which, -1)" [attr.aria-label]="'Less ' + label"><svg [lucideIcon]="icons.minus" [size]="18" /></button>
     <input [id]="'fit-' + which" type="text" inputmode="numeric" [value]="value" (change)="set(which, +$any($event.target).value)" (keydown.enter)="set(which, +$any($event.target).value)" />
-    <button type="button" (click)="step(which, 1)" [attr.aria-label]="'More ' + label"><lucide-icon [img]="icons.plus" [size]="18" /></button>
+    <button type="button" (click)="step(which, 1)" [attr.aria-label]="'More ' + label"><svg [lucideIcon]="icons.plus" [size]="18" /></button>
   </div>
 </ng-template>
 

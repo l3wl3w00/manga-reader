@@ -17,7 +17,7 @@
             [attr.aria-pressed]="kb.activePreset() === p.id" (click)="applyPreset(p.id)">{{ kb.getPresetLabel(p.id) }}</button>
           <button class="btn btn-sq btn-ghost -ml-0.5 hidden group-hover/p:inline-flex group-focus-within/p:inline-flex"
             (click)="startRename(p.id)" [attr.aria-label]="'Rename ' + kb.getPresetLabel(p.id) + ' preset'">
-            <lucide-icon [img]="icons.pencil" [size]="16" />
+            <svg [lucideIcon]="icons.pencil" [size]="16" />
           </button>
         </div>
       }
@@ -27,14 +27,14 @@
     }
     <button class="btn btn-ghost" [class.ml-auto]="!mobile" (click)="resetBindings()" [disabled]="!canReset()"
       [title]="canReset() ? 'Back to the Default preset' : 'Nothing to reset: a preset is in use as it ships'">
-      <lucide-icon [img]="icons.reset" [size]="18" />Reset to defaults
+      <svg [lucideIcon]="icons.reset" [size]="18" />Reset to defaults
     </button>
   </div>
 
   <!-- Conflicts -->
   @for (c of kb.conflicts(); track c.winner) {
     <div class="flex flex-wrap items-center gap-3 border-2 border-gold bg-gold/8 px-3.5 py-2.5" role="alert" animate.enter="a-pop-in" animate.leave="a-pop-out">
-      <lucide-icon [img]="icons.alert" [size]="18" class="text-gold" />
+      <svg [lucideIcon]="icons.alert" [size]="18" class="text-gold" />
       <span class="min-w-[200px] flex-1 text-sm">
         <b class="text-gold">{{ formatKey(c.binding) }} is bound {{ c.losers.length > 1 ? (c.losers.length + 1) + ' times' : 'twice' }}.</b>
         {{ labels[c.winner] }} wins, so {{ loserNames(c.losers) }} never {{ c.losers.length > 1 ? 'fire' : 'fires' }}.

@@ -15,7 +15,7 @@ ng serve              # dev server on localhost
 npm run build:single  # one self-contained file → dist/manga-reader.html (scripts/inline.mjs; Google Fonts stay a link)
 ```
 
-Install with `npm ci --legacy-peer-deps`: `lucide-angular` 1.0.0 (the latest) declares peers only up to Angular 21.
+Install with `npm ci`.
 
 External image source: `https://images.mangafreak.me/mangas/{manga}/{manga}_{ch}/{manga}_{ch}_{pg}.jpg` with `referrerpolicy="no-referrer"`.
 
@@ -29,7 +29,8 @@ stock Tailwind palette is switched off). `styles.css` also holds the design-syst
 reduced-motion fallbacks under `html[data-motion="reduced"]` (never `@media (prefers-reduced-motion)`: `MotionService`
 decides, so the in-app setting can override the system), the page-strip rules (`.strip`, `.slot`, `.veil`, `.nb-*`)
 and the backdrop rules (`.bd`, `.bd-drift`). Fonts come from Google Fonts (`src/index.html`); icons are Lucide
-(`lucide-angular`, listed in `ui/icons.ts`). Overlays whose host is removed by the parent (sheets, settings, end card)
+(`@lucide/angular`'s `LucideDynamicIcon`: `<svg [lucideIcon]="icons.x" />`; the icon data comes from `lucide` and
+is listed in `ui/icons.ts`, because `@lucide/angular`'s per-icon components bloat the bundle by ~3 kB each). Overlays whose host is removed by the parent (sheets, settings, end card)
 put `animate.leave: 'x-leave'` on the host and `data-leave` on their parts.
 
 **Layout**: `LayoutService.mobile` (below 768 px, or a coarse pointer; same query as the `mobile:` variant) picks
